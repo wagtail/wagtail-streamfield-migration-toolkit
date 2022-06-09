@@ -1,0 +1,14 @@
+*.pyc
+/build
+/dist
+/wagtail_streamfield_migration_toolkit.egg-info
+/.coverage
+/htmlcov
+/.tox
+/venv
+/.vscode
+/site
+/test_wagtail_streamfield_migration_toolkit.db
+/node_modules
+/test-static
+/test-media
