@@ -46,7 +46,7 @@ jobs:
         postgres: ['10.8']
         exclude:
           - python: '3.7'
-          - django: '4.0
+          - django: '4.0'
 
     services:
       postgres:
