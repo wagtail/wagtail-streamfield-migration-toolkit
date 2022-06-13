@@ -19,7 +19,7 @@ jobs:
         wagtail: ['3.0']
         exclude:
           - python: '3.7'
-          - django: '4.0'
+            django: '4.0'
 
     steps:
       - uses: actions/checkout@v2
