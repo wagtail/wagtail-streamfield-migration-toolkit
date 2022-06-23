@@ -1,4 +1,3 @@
-from statistics import mode
 from django.db import models
 from wagtail.models import Page
 from wagtail.fields import StreamField
@@ -6,18 +5,21 @@ from wagtail.blocks import CharBlock, StreamBlock, StructBlock
 
 
 class StructBlock1(StructBlock):
-    struct1field1 = CharBlock()
-    struct1field2 = CharBlock()
-
+    struct1_char1 = CharBlock()
+    struct1_char2 = CharBlock()
+    struct1_stream1 = StreamBlock([
+        ("struct1_stream1_char1", CharBlock()),
+        ("struct1_stream1_char2", CharBlock())
+    ])
 
 class StreamBlock1(StreamBlock):
-    stream1field1 = CharBlock()
-    stream1field2 = CharBlock()
+    stream1_char1 = CharBlock()
+    stream1_char2 = CharBlock()
 
 
 class BaseStreamBlock(StreamBlock):
-    field1 = CharBlock()
-    field2 = CharBlock()
+    char1 = CharBlock()
+    char2 = CharBlock()
     struct1 = StructBlock1()
     stream1 = StreamBlock1()
 

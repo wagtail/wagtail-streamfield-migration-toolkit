@@ -10,11 +10,11 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 
 ## Links
 
-- [Documentation](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/README.md)
+<!-- - [Documentation](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/README.md)
 - [Changelog](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/CHANGELOG.md)
 - [Contributing](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/CHANGELOG.md)
 - [Discussions](https://github.com/wagtail/streamfield-migration-toolkit/discussions)
-- [Security](https://github.com/wagtail/streamfield-migration-toolkit/security)
+- [Security](https://github.com/wagtail/streamfield-migration-toolkit/security) -->
 
 ## Supported versions
 
