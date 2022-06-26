@@ -24,7 +24,7 @@ class RemoveRawDataIndividualTestCase(SimpleTestCase):
         self.assertEqual(len(altered_raw_data), 0)
 
     @expectedFailure
-    def test_struct_remove(self):
+    def test_struct_nested_remove(self):
         """Remove `simplestruct.char1`"""
 
         raw_data = [
@@ -43,30 +43,59 @@ class RemoveRawDataIndividualTestCase(SimpleTestCase):
         self.assertNotIn("char1", altered_raw_data[0]["value"])
 
     @expectedFailure
-    def test_simple_nested_remove(self):
-        """Remove `stream1.stream1_char1`"""
+    def test_stream_nested_remove(self):
+        """Remove `simplestream.char1`"""
 
         raw_data = [
             {
-                "type": "stream1",
-                "value": [
-                    {"type": "stream1_char1", "value": "Nested Stream field remove"}
-                ],
+                "type": "simplestream",
+                "value": [{"type": "char1", "value": "Char Block 1"}],
             }
         ]
         altered_raw_data = apply_changes_to_raw_data(
-            raw_data, "stream1.stream1_char1", "remove"
+            raw_data, "simplestream.char1", "remove"
         )
 
         self.assertEqual(len(altered_raw_data[0]["value"]), 0)
 
-    # @expectedFailure
-    # def test_struct_nested_remove(self):
-    #     pass
+    @expectedFailure
+    def test_struct_stream_nested_remove(self):
+        """Remove `nestedstruct.stream1.char1`"""
 
-    # @expectedFailure
-    # def test_list_nested_remove(self):
-    #     pass
+        raw_data = [
+            {
+                "type": "nestedstruct",
+                "value": {"stream1": [{"type": "char1", "value": "Char Block 1"}]},
+            }
+        ]
+        altered_raw_data = apply_changes_to_raw_data(
+            raw_data, "nestedstruct.stream1.char1", "remove"
+        )
+
+        nested_block = altered_raw_data[0]["value"]
+        self.assertEqual(len(nested_block["stream1"]), 0)
+
+    @expectedFailure
+    def test_list_stream_nested_remove(self):
+        """Remove `nestedlist.char1`"""
+
+        raw_data = [
+            {
+                "type": "nestedlist",
+                "value": [
+                    {
+                        "type": "item",
+                        "value": [{"type": "char1", "value": "Char Block 1"}],
+                    }
+                ],
+            }
+        ]
+        altered_raw_data = apply_changes_to_raw_data(
+            raw_data, "nestedlist.char1", "remove"
+        )
+
+        nested_block = altered_raw_data[0]["value"]
+        self.assertEqual(len(nested_block[0]["value"]), 0)
 
 
 class RemoveRawDataFullTestCase(TestCase):
