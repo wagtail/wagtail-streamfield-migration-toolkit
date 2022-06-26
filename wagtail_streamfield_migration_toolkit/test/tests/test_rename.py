@@ -111,11 +111,38 @@ class RenameRawDataIndividualTestCase(SimpleTestCase):
         altered_nested_block = altered_block["value"]["struct1_stream1"][0]
         self.assertEqual(altered_nested_block["type"], "renamed1")
         self.assertEqual(altered_nested_block["value"], "Rename this")
+        
+    @expectedFailure
+    def test_list_nested_rename(self):
+        """Rename `list1.stream1_char1` to `list1.renamed1`"""
 
-    # @expectedFailure
-    # def test_list_nested_rename(self):
-        # TODO complete
-        # pass
+        raw_data = [
+            {
+                "type": "list1",
+                "value": [
+                    {
+                        "type": "item",
+                        "value": [{"type": "stream1_char1", "value": "Rename this"}],
+                    }
+                ],
+            }
+        ]
+        altered_raw_data = apply_changes_to_raw_data(
+            raw_data,
+            "list1.stream1_char1",
+            "rename",
+            new_name="renamed1",
+        )
+
+        altered_block = altered_raw_data[0]
+        self.assertEqual(altered_block["type"], "list1")
+
+        list_item = altered_block["value"][0]
+        self.assertEqual(list_item["type"], "item")
+
+        altered_nested_block = list_item["value"][0]
+        self.assertEqual(altered_nested_block["type"], "renamed1")
+        self.assertEqual(altered_nested_block["value"], "Rename this")
 
 
 class RenameRawDataFullTestCase(TestCase):
