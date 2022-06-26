@@ -18,29 +18,29 @@ class RemoveRawDataIndividualTestCase(SimpleTestCase):
     def test_simple_remove(self):
         """Remove `char1`"""
 
-        raw_data = [{"type": "char1", "value": "Simple Remove Value"}]
+        raw_data = [{"type": "char1", "value": "Char Block 1"}]
         altered_raw_data = apply_changes_to_raw_data(raw_data, "char1", "remove")
 
         self.assertEqual(len(altered_raw_data), 0)
 
     @expectedFailure
     def test_struct_remove(self):
-        """Remove `struct1.struct1_char1`"""
+        """Remove `simplestruct.char1`"""
 
         raw_data = [
             {
-                "type": "struct1",
+                "type": "simplestruct",
                 "value": {
-                    "struct1_char1": "Struct field remove",
-                    "struct1_char2": "This shouldn't change",
+                    "char1": "Char Block 1",
+                    "char2": "Char Block 2",
                 },
             }
         ]
         altered_raw_data = apply_changes_to_raw_data(
-            raw_data, "struct1.struct1_char1", "remove"
+            raw_data, "simplestruct.char1", "remove"
         )
 
-        self.assertNotIn("struct1_char1", altered_raw_data[0]["value"])
+        self.assertNotIn("char1", altered_raw_data[0]["value"])
 
     @expectedFailure
     def test_simple_nested_remove(self):
