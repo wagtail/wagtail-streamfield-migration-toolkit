@@ -36,8 +36,8 @@ class BaseStreamBlock(StreamBlock):
     simplelist = ListBlock(CharBlock())
     nestedstruct = NestedStructBlock()
     nestedstream = NestedStreamBlock()
-    nestedlist1 = ListBlock(SimpleStructBlock())
-    nestedlist2 = ListBlock(SimpleStreamBlock())
+    nestedlist_struct = ListBlock(SimpleStructBlock())
+    nestedlist_stream = ListBlock(SimpleStreamBlock())
 
 
 class SampleModel(models.Model):
