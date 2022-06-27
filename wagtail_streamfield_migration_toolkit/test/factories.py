@@ -1,10 +1,6 @@
 import factory
+from factory.django import DjangoModelFactory
 import wagtail_factories
-
-try:
-    from factory.django import DjangoModelFactory
-except ImportError:
-    from factory import DjangoModelFactory
 
 from . import models
 
