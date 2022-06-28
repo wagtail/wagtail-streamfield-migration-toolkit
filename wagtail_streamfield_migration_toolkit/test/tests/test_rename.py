@@ -164,7 +164,9 @@ class RenameRawDataMultipleBlocksTestCase(TestCase):
             content__2__char1__value="Char Block 1",
         ).content.raw_data
 
-        altered_raw_data = apply_changes_to_raw_data(raw_data, "char1", "rename")
+        altered_raw_data = apply_changes_to_raw_data(
+            raw_data, "char1", "rename", new_name="renamed1"
+        )
 
         self.assertEqual(altered_raw_data[0]["type"], "renamed1")
         self.assertEqual(altered_raw_data[1]["type"], "char2")
@@ -181,7 +183,7 @@ class RenameRawDataMultipleBlocksTestCase(TestCase):
         ).content.raw_data
 
         altered_raw_data = apply_changes_to_raw_data(
-            raw_data, "simplestruct.char1", "rename"
+            raw_data, "simplestruct.char1", "rename", new_name="renamed1"
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
@@ -207,7 +209,7 @@ class RenameRawDataMultipleBlocksTestCase(TestCase):
         ).content.raw_data
 
         altered_raw_data = apply_changes_to_raw_data(
-            raw_data, "nestedlist_struct.char1", "rename"
+            raw_data, "nestedlist_struct.char1", "rename", new_name="renamed1"
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
