@@ -12,7 +12,7 @@ from wagtail_streamfield_migration_toolkit.operations import (
 # TODO add asserts for ids
 
 
-class TopLevelTest(TestCase):
+class FieldChildBlockTest(TestCase):
     """Changes to `char1`"""
 
     @classmethod
@@ -59,7 +59,7 @@ class TopLevelTest(TestCase):
         pass
 
 
-class StructNestedTest(TestCase):
+class FieldStructChildBlockTest(TestCase):
     """Changes to `simplestruct.char1`"""
 
     @classmethod
@@ -120,7 +120,7 @@ class StructNestedTest(TestCase):
         self.assertIn("char2", altered_raw_data[2]["value"])
 
 
-class StreamNestedTest(TestCase):
+class FieldStreamChildBlock(TestCase):
     """Changes to `simplestream.char1`"""
 
     @classmethod
@@ -188,7 +188,7 @@ class StreamNestedTest(TestCase):
         self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char2")
 
 
-class StructStreamNestedTest(TestCase):
+class FieldStructStreamChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestream.char1`"""
 
     @classmethod
@@ -281,7 +281,7 @@ class StructStreamNestedTest(TestCase):
         self.assertEqual("char2", altered_raw_data[1]["value"]["stream1"][0]["type"])
 
 
-class StructStructNestedTest(TestCase):
+class FieldStructStructChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestruct.char1`"""
 
     @classmethod
@@ -360,19 +360,19 @@ class StructStructNestedTest(TestCase):
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
 
 
-class StreamStreamNestedTest(TestCase):
+class FieldStreamStreamChildBlockTest(TestCase):
     pass
 
 
-class StreamStructNestedTest(TestCase):
+class FieldStreamStructChildBlockTest(TestCase):
     pass
 
 
-class ListStreamNestedTest(TestCase):
+class FieldListStreamChildBlockTest(TestCase):
     pass
 
 
-class ListStructNestedTest(TestCase):
+class FieldListStructChildBlockTest(TestCase):
     """Changes to `nestedlist_struct.char1`"""
 
     @classmethod
