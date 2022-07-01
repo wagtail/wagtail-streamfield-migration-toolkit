@@ -3,6 +3,10 @@ from django.test import SimpleTestCase, TestCase
 
 from .. import factories
 from wagtail_streamfield_migration_toolkit.utils import apply_changes_to_raw_data
+from wagtail_streamfield_migration_toolkit.operations import (
+    RenameBlockOperation,
+    RemoveBlockOperation,
+)
 
 
 # TODO add asserts for ids
@@ -23,7 +27,7 @@ class TopLevelTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "char1", "rename", new_name="renamed1"
+            self.raw_data, "char1", RenameBlockOperation(new_name="renamed1")
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "renamed1")
@@ -34,14 +38,16 @@ class TopLevelTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "char1", "rename", new_name="renamed1"
+            self.raw_data, "char1", RenameBlockOperation(new_name="renamed1")
         )
 
         self.assertEqual(altered_raw_data[1]["type"], "char2")
 
     @expectedFailure
     def test_remove(self):
-        altered_raw_data = apply_changes_to_raw_data(self.raw_data, "char1", "remove")
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data, "char1", RemoveBlockOperation()
+        )
 
         self.assertEqual(len(altered_raw_data), 1)
         self.assertEqual(altered_raw_data[0]["type"], "char2")
@@ -68,7 +74,9 @@ class StructNestedTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestruct.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "simplestruct.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertNotIn("char1", altered_raw_data[1]["value"])
@@ -78,7 +86,9 @@ class StructNestedTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestruct.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "simplestruct.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
@@ -91,7 +101,7 @@ class StructNestedTest(TestCase):
     @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestruct.char1", "remove"
+            self.raw_data, "simplestruct.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"]), 1)
@@ -101,7 +111,7 @@ class StructNestedTest(TestCase):
 
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestruct.char1", "remove"
+            self.raw_data, "simplestruct.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data), 3)
@@ -136,7 +146,9 @@ class StreamNestedTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestream.char1", "rename", "renamed1"
+            self.raw_data,
+            "simplestream.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[1]["value"][0]["type"], "renamed1")
@@ -145,7 +157,9 @@ class StreamNestedTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestream.char1", "rename", "renamed1"
+            self.raw_data,
+            "simplestream.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
@@ -157,7 +171,7 @@ class StreamNestedTest(TestCase):
     @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestream.char1", "remove"
+            self.raw_data, "simplestream.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"]), 1)
@@ -166,7 +180,7 @@ class StreamNestedTest(TestCase):
     @expectedFailure
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "simplestream.char1", "remove"
+            self.raw_data, "simplestream.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data), 3)
@@ -211,7 +225,9 @@ class StructStreamNestedTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.stream1.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "nestedstruct.stream1.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[1]["value"]["stream1"][0]["type"], "renamed1")
@@ -220,7 +236,9 @@ class StructStreamNestedTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.stream1.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "nestedstruct.stream1.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
@@ -241,7 +259,7 @@ class StructStreamNestedTest(TestCase):
     @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.stream1.char1", "remove"
+            self.raw_data, "nestedstruct.stream1.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"]["stream1"]), 1)
@@ -252,7 +270,7 @@ class StructStreamNestedTest(TestCase):
     @expectedFailure
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.stream1.char1", "remove"
+            self.raw_data, "nestedstruct.stream1.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data), 4)
@@ -281,7 +299,9 @@ class StructStructNestedTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.struct1.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "nestedstruct.struct1.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertNotIn("char1", altered_raw_data[1]["value"]["struct1"]["value"])
@@ -291,7 +311,9 @@ class StructStructNestedTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.struct1.char1", "rename", new_name="renamed1"
+            self.raw_data,
+            "nestedstruct.struct1.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(len(altered_raw_data), 4)
@@ -315,7 +337,7 @@ class StructStructNestedTest(TestCase):
     @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.struct1.char1", "remove"
+            self.raw_data, "nestedstruct.struct1.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"]["struct1"]), 1)
@@ -326,7 +348,7 @@ class StructStructNestedTest(TestCase):
 
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedstruct.struct1.char1", "remove"
+            self.raw_data, "nestedstruct.struct1.char1", RemoveBlockOperation()
         )
 
         self.assertEqual(len(altered_raw_data), 4)
@@ -367,7 +389,9 @@ class ListStructNestedTest(TestCase):
     @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedlist_struct.char1", "rename", "renamed1"
+            self.raw_data,
+            "nestedlist_struct.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertNotIn("char1", altered_raw_data[1]["value"][0]["value"])
@@ -380,7 +404,9 @@ class ListStructNestedTest(TestCase):
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data, "nestedlist_struct.char1", "rename", "renamed1"
+            self.raw_data,
+            "nestedlist_struct.char1",
+            RenameBlockOperation(new_name="renamed1"),
         )
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
