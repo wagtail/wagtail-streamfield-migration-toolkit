@@ -304,10 +304,10 @@ class FieldStructStructChildBlockTest(TestCase):
             RenameBlockOperation(new_name="renamed1"),
         )
 
-        self.assertNotIn("char1", altered_raw_data[1]["value"]["struct1"]["value"])
-        self.assertNotIn("char1", altered_raw_data[2]["value"]["struct1"]["value"])
-        self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"]["value"])
-        self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"]["value"])
+        self.assertNotIn("char1", altered_raw_data[1]["value"]["struct1"])
+        self.assertNotIn("char1", altered_raw_data[2]["value"]["struct1"])
+        self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"])
+        self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"])
 
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -360,16 +360,13 @@ class FieldStructStructChildBlockTest(TestCase):
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
 
 
-class FieldStreamStreamChildBlockTest(TestCase):
-    pass
+# TODO class FieldStreamStreamChildBlockTest(TestCase):
 
 
-class FieldStreamStructChildBlockTest(TestCase):
-    pass
+# TODO class FieldStreamStructChildBlockTest(TestCase):
 
 
-class FieldListStreamChildBlockTest(TestCase):
-    pass
+# TODO class FieldListStreamChildBlockTest(TestCase):
 
 
 class FieldListStructChildBlockTest(TestCase):
