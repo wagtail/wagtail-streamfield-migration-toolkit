@@ -420,12 +420,6 @@ class FieldStructStructChildBlockTest(TestCase):
 # TODO class FieldListStreamChildBlockTest(TestCase):
 
 
-# TODO class FieldStreamStructChildBlockTest(TestCase):
-
-
-# TODO class FieldListStreamChildBlockTest(TestCase):
-
-
 class FieldListStructChildBlockTest(TestCase):
     """Changes to `nestedlist_struct.char1`"""
 
