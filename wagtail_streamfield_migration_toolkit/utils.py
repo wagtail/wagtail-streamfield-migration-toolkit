@@ -38,14 +38,19 @@ def get_altered_or_unchanged_block(
 ):
     # TODO complete description
 
-    # If the block is not in the `block_path`, then neither it nor it's children are going to
-    # be changed.
+    # If the block is not at the start of `block_path`, then neither it nor it's children are
+    # blocks that we need to change.
     if not is_block_at_path_start(block, block_path):
         return block
 
+    # If the `block_path` length is 1, that means we've reached the end of the block path, that
+    # is, the block where we need to apply the operation.
     elif len(block_path) == 1:
         altered_block = operation.apply_to_block(block)
+        return altered_block
 
+    # Depending on whether the block is a ListBlock, StructBlock or StreamBlock we call a
+    # different function to alter its children.
     block_structure_type = get_block_structure_type(block_def)
 
     if block_structure_type == ListBlock:
@@ -86,7 +91,7 @@ def get_altered_or_unchanged_block(
 
     else:
         # TODO figure out if this is needed and how to do it
-        raise ValueError("This is bad + {}".format(block))
+        raise ValueError("Unexpected Structural Block + {}".format(block))
 
     return altered_block
 
