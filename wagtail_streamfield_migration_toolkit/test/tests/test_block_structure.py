@@ -411,16 +411,16 @@ class FieldStructStructChildBlockTest(TestCase):
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
 
 
-class FieldStreamStreamChildBlockTest(TestCase):
-    pass
+# TODO class FieldStreamStreamChildBlockTest(TestCase):
+#     pass
 
 
-class FieldStreamStructChildBlockTest(TestCase):
-    pass
+# TODO class FieldStreamStructChildBlockTest(TestCase):
+#     pass
 
 
-class FieldListStreamChildBlockTest(TestCase):
-    pass
+# TODO class FieldListStreamChildBlockTest(TestCase):
+#     pass
 
 
 class FieldListStructChildBlockTest(TestCase):
