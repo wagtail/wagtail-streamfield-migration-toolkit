@@ -12,27 +12,6 @@ from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
 def is_block_at_path_start(block, block_path):
     return block["type"] == block_path[0]
 
-
-def get_block_structure_type(block_def):
-    # Returns whether a block is a StreamBlock, StructBlock or ListBlock.
-    # To be used only for blocks with children.
-
-    if isinstance(block_def, StreamBlock):
-        return StreamBlock
-    elif isinstance(block_def, StructBlock):
-        return StructBlock
-    elif isinstance(block_def, ListBlock):
-        return ListBlock
-
-    # TODO check if handling this is necessary
-    return None
-
-
-def parse_block_path(block_path_str):
-    block_path = block_path_str.split(".")
-    return block_path
-
-
 def get_altered_or_unchanged_block(
     block, block_def, block_path, operation: BaseBlockOperation, **kwargs
 ):
@@ -51,9 +30,8 @@ def get_altered_or_unchanged_block(
 
     # Depending on whether the block is a ListBlock, StructBlock or StreamBlock we call a
     # different function to alter its children.
-    block_structure_type = get_block_structure_type(block_def)
 
-    if block_structure_type == ListBlock:
+    if isinstance(block_def, ListBlock):
         altered_block = {
             **block,
             "value": get_altered_or_unchanged_list_blocks(
@@ -65,7 +43,7 @@ def get_altered_or_unchanged_block(
             ),
         }
 
-    elif block_structure_type == StructBlock:
+    elif isinstance(block_def, StructBlock):
         altered_block = {
             **block,
             "value": get_altered_or_unchanged_struct_blocks(
@@ -77,7 +55,7 @@ def get_altered_or_unchanged_block(
             ),
         }
 
-    elif block_structure_type == StreamBlock:
+    elif isinstance(block_def, StreamBlock):
         altered_block = {
             **block,
             "value": get_altered_or_unchanged_stream_blocks(
@@ -166,6 +144,7 @@ def get_altered_or_unchanged_list_blocks(blocks, block_def, block_path, **kwargs
     return altered_blocks
 
 
+# TODO discuss better naming convention
 def get_altered_or_unchanged_stream_blocks(blocks, block_def, block_path, **kwargs):
 
     altered_blocks = []
@@ -207,7 +186,7 @@ def apply_changes_to_raw_data(
         altered_raw_data:
     """
 
-    block_path = parse_block_path(block_path_str)
+    block_path = block_path_str.split(".")
     block_def = streamfield.field.stream_block
 
     # TODO this might be better if we are moving top level blocks (there wouldn't be a common
