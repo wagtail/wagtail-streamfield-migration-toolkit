@@ -17,18 +17,14 @@ from wagtail_streamfield_migration_toolkit.operations import (
 class FieldChildBlockTest(TestCase):
     """Changes to `char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1__char2__value="Char Block 2",
             content__2__char1__value="Char Block 1",
         ).content.raw_data
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -53,7 +49,6 @@ class FieldChildBlockTest(TestCase):
 
         self.assertEqual(altered_raw_data[1]["type"], "char2")
 
-    # @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -75,18 +70,14 @@ class FieldChildBlockTest(TestCase):
 class FieldStructChildBlockTest(TestCase):
     """Changes to `simplestruct.char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="simplestruct",
             content__2="simplestruct",
         ).content.raw_data
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -115,7 +106,6 @@ class FieldStructChildBlockTest(TestCase):
         self.assertIn("char2", altered_raw_data[1]["value"])
         self.assertIn("char2", altered_raw_data[2]["value"])
 
-    # @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -146,8 +136,6 @@ class FieldStructChildBlockTest(TestCase):
 class FieldStreamChildBlock(TestCase):
     """Changes to `simplestream.char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         # TODO until support is available from wagtail-factories, manually write.
         raw_data = [
@@ -165,10 +153,8 @@ class FieldStreamChildBlock(TestCase):
                 "value": [{"type": "char1", "value": "Char Block 1"}],
             },
         ]
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -195,7 +181,6 @@ class FieldStreamChildBlock(TestCase):
 
         self.assertEqual(altered_raw_data[1]["value"][1]["type"], "char2")
 
-    # @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -207,7 +192,6 @@ class FieldStreamChildBlock(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"]), 1)
         self.assertEqual(len(altered_raw_data[2]["value"]), 0)
 
-    # @expectedFailure
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -224,8 +208,6 @@ class FieldStreamChildBlock(TestCase):
 class FieldStructStreamChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestream.char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
@@ -254,10 +236,8 @@ class FieldStructStreamChildBlockTest(TestCase):
             }
         )
 
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -293,7 +273,6 @@ class FieldStructStreamChildBlockTest(TestCase):
 
         self.assertEqual(altered_raw_data[1]["value"]["stream1"][1]["type"], "char2")
 
-    # @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -307,7 +286,6 @@ class FieldStructStreamChildBlockTest(TestCase):
 
         self.assertNotEqual(altered_raw_data[1]["value"]["stream1"][0]["type"], "char1")
 
-    # @expectedFailure
     def test_remove_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -327,8 +305,6 @@ class FieldStructStreamChildBlockTest(TestCase):
 class FieldStructStructChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestruct.char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
@@ -338,10 +314,8 @@ class FieldStructStructChildBlockTest(TestCase):
             content__2__nestedstruct__list1__value="a",
             content__3="simplestruct",
         ).content.raw_data
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -381,7 +355,6 @@ class FieldStructStructChildBlockTest(TestCase):
         self.assertIn("char2", altered_raw_data[1]["value"]["struct1"])
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
 
-    # @expectedFailure
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -425,8 +398,6 @@ class FieldStructStructChildBlockTest(TestCase):
 class FieldListStructChildBlockTest(TestCase):
     """Changes to `nestedlist_struct.item.char1`"""
 
-    # @classmethod
-    # def setUpTestData(cls):
     def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
@@ -435,10 +406,8 @@ class FieldListStructChildBlockTest(TestCase):
             content__2__nestedlist_struct__0__label="Nested List Struct 3",
             content__3__simplestruct__label="Simple Struct 1",
         ).content.raw_data
-        # cls.raw_data = raw_data
         self.raw_data = raw_data
 
-    # @expectedFailure
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
