@@ -12,6 +12,7 @@ class BaseBlockOperation:
         raise NotImplementedError
 
 
+# TODO have separate classes for each parent block type
 class RenameBlockOperation(BaseBlockOperation):
     def __init__(self, new_name):
         self.new_name = new_name
