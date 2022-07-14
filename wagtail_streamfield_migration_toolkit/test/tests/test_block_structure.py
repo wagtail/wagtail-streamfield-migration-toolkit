@@ -421,7 +421,7 @@ class FieldStructStructChildBlockTest(TestCase):
 
 
 class FieldListStructChildBlockTest(TestCase):
-    """Changes to `nestedlist_struct.char1`"""
+    """Changes to `nestedlist_struct.item.char1`"""
 
     # @classmethod
     # def setUpTestData(cls):
@@ -440,7 +440,7 @@ class FieldListStructChildBlockTest(TestCase):
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            "nestedlist_struct.char1",
+            "nestedlist_struct.item.char1",
             RenameBlockOperation(new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
@@ -456,7 +456,7 @@ class FieldListStructChildBlockTest(TestCase):
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            "nestedlist_struct.char1",
+            "nestedlist_struct.item.char1",
             RenameBlockOperation(new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
