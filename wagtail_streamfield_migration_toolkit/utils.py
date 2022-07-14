@@ -5,7 +5,6 @@ from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
 
 
 # TODO handle block_defs not existing? we'll do this later
-# TODO complete descriptions
 
 
 def is_block_at_path_start(block_name, block_path):
@@ -15,7 +14,6 @@ def is_block_at_path_start(block_name, block_path):
 def map_block_value(
     block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
 ):
-    # TODO complete description
 
     # If the `block_path` length is 1, that means we've reached the end of the block path, that
     # is, the block where we need to apply the operation. Note that we are asking the user to
