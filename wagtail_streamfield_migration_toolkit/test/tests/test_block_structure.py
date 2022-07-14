@@ -61,7 +61,19 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[0]["type"], "char2")
 
     def test_to_listblock(self):
-        pass
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "char1",
+            ToListBlockOperation(block_name="list1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(len(altered_raw_data), 2)
+        self.assertEqual(altered_raw_data[0]["type"], "char2")
+        self.assertEqual(altered_raw_data[1]["type"], "list1")
+        self.assertEqual(len(altered_raw_data[1]["value"]), 2)
+        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "item")
+        self.assertEqual(altered_raw_data[1]["value"][0]["value"], "Char Block 1")
 
     def test_to_streamblock(self):
         pass
