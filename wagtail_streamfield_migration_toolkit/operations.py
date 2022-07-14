@@ -2,22 +2,16 @@ class BaseBlockOperation:
     def __init__(self):
         pass
 
-    def apply_to_stream_block_value(self, block_value, child_block_name):
-        raise NotImplementedError
-
-    def apply_to_list_block_value(self, block_value, child_block_name):
-        raise NotImplementedError
-
-    def apply_to_struct_block_value(self, block_value, child_block_name):
+    def apply(self, block_value, child_block_name):
         raise NotImplementedError
 
 
-class RenameBlockOperation(BaseBlockOperation):
+class RenameStreamChildrenOperation(BaseBlockOperation):
     def __init__(self, new_name):
-        self.new_name = new_name
         super().__init__()
+        self.new_name = new_name
 
-    def apply_to_stream_block_value(self, block_value, child_block_name):
+    def apply(self, block_value, child_block_name):
         mapped_block_value = []
         for child_block in block_value:
             if child_block["type"] == child_block_name:
@@ -26,9 +20,13 @@ class RenameBlockOperation(BaseBlockOperation):
                 mapped_block_value.append(child_block)
         return mapped_block_value
 
-    # Note that `apply_to_list_block_value` should not be called at all for this operation
 
-    def apply_to_struct_block_value(self, block_value, child_block_name):
+class RenameStructChildrenOperation(BaseBlockOperation):
+    def __init__(self, new_name):
+        super().__init__()
+        self.new_name = new_name
+
+    def apply(self, block_value, child_block_name):
         mapped_block_value = {}
         for key in block_value:
             if key == child_block_name:
@@ -38,11 +36,11 @@ class RenameBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
 
-class RemoveBlockOperation(BaseBlockOperation):
+class RemoveStreamChildrenOperation(BaseBlockOperation):
     def __init__(self):
         super().__init__()
 
-    def apply_to_stream_block_value(self, block_value, child_block_name):
+    def apply(self, block_value, child_block_name):
         mapped_block_value = []
         for child_block in block_value:
             if child_block["type"] == child_block_name:
@@ -51,9 +49,12 @@ class RemoveBlockOperation(BaseBlockOperation):
                 mapped_block_value.append(child_block)
         return mapped_block_value
 
-    # Note that `apply_to_list_block_value` should not be called at all for this operation
 
-    def apply_to_struct_block_value(self, block_value, child_block_name):
+class RemoveStructChildrenOperation(BaseBlockOperation):
+    def __init__(self):
+        super().__init__()
+
+    def apply(self, block_value, child_block_name):
         mapped_block_value = {}
         for key in block_value:
             if key == child_block_name:
