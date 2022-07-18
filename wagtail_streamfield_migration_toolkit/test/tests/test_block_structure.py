@@ -65,8 +65,8 @@ class FieldChildBlockTest(TestCase):
     def test_to_listblock(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            "char1",
-            StreamChildrenToListBlockOperation(list_block_name="list1"),
+            None,
+            StreamChildrenToListBlockOperation(block_names=["char1"], list_block_name="list1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -80,8 +80,9 @@ class FieldChildBlockTest(TestCase):
     def test_combine_to_streamblock(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            "char1",
+            None,
             StreamChildrenToStreamBlockOperation(
+                block_names=["char1"],
                 stream_block_name="stream1"
             ),
             streamfield=models.SampleModel.content,
@@ -91,15 +92,16 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[0]["type"], "char2")
         self.assertEqual(altered_raw_data[1]["type"], "stream1")
         self.assertEqual(len(altered_raw_data[1]["value"]), 2)
-        self.assertEqual(altered_raw_data[0]["value"][0]["type"], "char1")
-        self.assertEqual(altered_raw_data[0]["value"][1]["type"], "char1")
+        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char1")
+        self.assertEqual(altered_raw_data[1]["value"][1]["type"], "char1")
 
     def test_combine_to_streamblock_multiple(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            "*",
+            None,
             StreamChildrenToStreamBlockOperation(
-                stream_block_name="stream1", block_names=["char1", "char2"]
+                block_names=["char1", "char2"],
+                stream_block_name="stream1"
             ),
             streamfield=models.SampleModel.content,
         )

@@ -72,15 +72,16 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
 
 
 class StreamChildrenToListBlockOperation(BaseBlockOperation):
-    def __init__(self, list_block_name):
+    def __init__(self, block_names, list_block_name):
         super().__init__()
+        self.block_names = block_names
         self.list_block_name = list_block_name
         self.temp_blocks = []
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = []
         for child_block in block_value:
-            if child_block["type"] == child_block_name:
+            if child_block["type"] in self.block_names:
                 self.temp_blocks.append(child_block)
             else:
                 mapped_block_value.append(child_block)
@@ -98,19 +99,17 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
 
 
 class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
-    def __init__(self, stream_block_name, block_names=None):
+    def __init__(self, block_names, stream_block_name):
         super().__init__()
-        self.stream_block_name = stream_block_name
         self.block_names = block_names
+        self.stream_block_name = stream_block_name
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = []
         stream_value = []
 
         for child_block in block_value:
-            if (
-                self.block_names is not None and child_block["type"] in self.block_names
-            ) or child_block["type"] == child_block_name:
+            if child_block["type"] in self.block_names:
                 stream_value.append(child_block)
             else:
                 mapped_block_value.append(child_block)
@@ -120,5 +119,4 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
 
-class StreamChildrenCombineListsToStream(BaseBlockOperation):
-    def __init__(self, stream_block_name, block_names=None):
+# TODO class ApplyMultipleOperation(BaseBlockOperation):
