@@ -1,4 +1,5 @@
-from django.db.models import JSONField, F
+import json
+from django.db.models import JSONField, F, Subquery, OuterRef
 from django.db.models.functions import Cast
 from wagtail.blocks import StreamValue
 
@@ -47,4 +48,43 @@ def migrate_stream_data(
     if len(updated_pages_buffer) > 0:
         page_model.objects.bulk_update(updated_pages_buffer, [field_name])
 
-    # TODO for revisions
+    if with_revisions:
+        ContentType = apps.get_model("contenttypes", "ContentType")
+        PageRevision = apps.get_model("wagtailcore", "PageRevision")
+        contenttype_id = ContentType.objects.get_for_model(page_model).id
+
+        if revision_limit is not None:
+            revision_queryset = PageRevision.objects.filter(
+                id__in=Subquery(
+                    PageRevision.objects.filter(page_id=OuterRef("page_id"))
+                    .order_by("-created_at")
+                    .values_list("id", flat=True)[:revision_limit]
+                ),
+                page__content_type_id=contenttype_id,
+            )
+        else:
+            revision_queryset = PageRevision.objects.filter(
+                page__content_type_id=contenttype_id,
+            )
+
+        updated_revisions_buffer = []
+        for revision in revision_queryset.iterator(chunk_size=chunk_size):
+
+            altered_raw_data = utils.apply_changes_to_raw_data(
+                raw_data=json.loads(revision.content[field_name]),
+                block_path_str=block_path_str,
+                operation=operation,
+                streamfield=getattr(page_model, field_name),
+            )
+            # - TODO add a return value to util to know if changes were made - Where would this be added?
+            # - TODO save changed only
+
+            revision.content[field_name] = json.dumps(altered_raw_data)
+            updated_revisions_buffer.append(revision)
+
+            if len(updated_revisions_buffer) == chunk_size:
+                PageRevision.objects.bulk_update(updated_revisions_buffer, ["content"])
+                updated_revisions_buffer = []
+
+        if len(updated_revisions_buffer) > 0:
+            PageRevision.objects.bulk_update(updated_revisions_buffer, ["content"])
