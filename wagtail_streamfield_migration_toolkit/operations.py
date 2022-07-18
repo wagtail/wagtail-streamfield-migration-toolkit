@@ -2,19 +2,20 @@ class BaseBlockOperation:
     def __init__(self):
         pass
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         raise NotImplementedError
 
 
 class RenameStreamChildrenOperation(BaseBlockOperation):
-    def __init__(self, new_name):
+    def __init__(self, old_name, new_name):
         super().__init__()
+        self.old_name = old_name
         self.new_name = new_name
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = []
         for child_block in block_value:
-            if child_block["type"] == child_block_name:
+            if child_block["type"] == self.old_name:
                 mapped_block_value.append({**child_block, "type": self.new_name})
             else:
                 mapped_block_value.append(child_block)
@@ -22,14 +23,15 @@ class RenameStreamChildrenOperation(BaseBlockOperation):
 
 
 class RenameStructChildrenOperation(BaseBlockOperation):
-    def __init__(self, new_name):
+    def __init__(self, old_name, new_name):
         super().__init__()
+        self.old_name = old_name
         self.new_name = new_name
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = {}
         for key in block_value:
-            if key == child_block_name:
+            if key == self.old_name:
                 mapped_block_value[self.new_name] = block_value[key]
             else:
                 mapped_block_value[key] = block_value[key]
@@ -37,13 +39,14 @@ class RenameStructChildrenOperation(BaseBlockOperation):
 
 
 class RemoveStreamChildrenOperation(BaseBlockOperation):
-    def __init__(self):
+    def __init__(self, name):
         super().__init__()
+        self.name = name
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = []
         for child_block in block_value:
-            if child_block["type"] == child_block_name:
+            if child_block["type"] == self.name:
                 continue
             else:
                 mapped_block_value.append(child_block)
@@ -51,13 +54,14 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
 
 
 class RemoveStructChildrenOperation(BaseBlockOperation):
-    def __init__(self):
+    def __init__(self, name):
         super().__init__()
+        self.name = name
 
-    def apply(self, block_value, child_block_name):
+    def apply(self, block_value):
         mapped_block_value = {}
         for key in block_value:
-            if key == child_block_name:
+            if key == self.name:
                 continue
             else:
                 mapped_block_value[key] = block_value[key]

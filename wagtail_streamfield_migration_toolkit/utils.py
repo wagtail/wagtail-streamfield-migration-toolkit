@@ -15,12 +15,12 @@ def map_block_value(
     block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
 ):
 
-    # If the `block_path` length is 1, that means we've reached the end of the block path, that
+    # If the `block_path` length is 0, that means we've reached the end of the block path, that
     # is, the block where we need to apply the operation. Note that we are asking the user to
     # pass "item" as part of the block path for list children, so it won't give rise to any
     # problems here.
-    if len(block_path) == 1:
-        mapped_value = operation.apply(block_value, block_path[-1])
+    if len(block_path) == 0:
+        mapped_value = operation.apply(block_value)
         return mapped_value
 
     # Depending on whether the block is a ListBlock, StructBlock or StreamBlock we call a
@@ -133,15 +133,18 @@ def apply_changes_to_raw_data(
             The current stream data (a list of top level blocks)
         block_path_str:
             Should be a '.' separated list of names of the blocks from the top level block to
-            the nested block which is to be changed.
+            the direct parent of the nested block which is to be changed.
 
-            eg:- 'simplestream.char1' would point to,
-                [..., { type: simplestream, value: [..., {type: char1, value: ''}] }]
+            eg:- 'simplestream.struct1' would point to,
+                [..., { type: simplestream, value: [..., { type: struct1, value: {...} }] }]
+
+            NOTE: If we're directly applying changes on the top level stream block, then this will
+            be None.
 
             NOTE: When the path contains a ListBlock child, 'item' must be added to the block as
             the name of said child.
 
-            eg:- 'list1.item.char1' where the list child is a StructBlock would point to,
+            eg:- 'list1.item.stream1' where the list child is a StructBlock would point to,
                 [
                     ...,
                     {
@@ -149,14 +152,14 @@ def apply_changes_to_raw_data(
                         value: [
                             {
                                 type: item,
-                                value: { ..., char1: "" }
+                                value: { ..., stream1: [...] }
                             },
                             ...
                         ]
                     }
                 ]
         operation:
-            A subclass of `operations.BaseBlockOperation`. It will have the `apply_to_` methods
+            A subclass of `operations.BaseBlockOperation`. It will have the `apply` method
             for applying changes to the parent block of the block type that must be changed.
         streamfield:
             The streamfield for which data is being migrated. This is used to get the definitions
@@ -166,7 +169,12 @@ def apply_changes_to_raw_data(
         altered_raw_data:
     """
 
-    block_path = block_path_str.split(".")
+    if block_path_str is not None:
+        block_path = block_path_str.split(".")
+    else:
+        # If block_path_str is None we're directly applying the operation on the top level
+        # streamblock.
+        block_path = []
     block_def = streamfield.field.stream_block
 
     altered_raw_data = map_block_value(
