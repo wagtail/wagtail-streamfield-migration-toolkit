@@ -8,6 +8,8 @@ from wagtail_streamfield_migration_toolkit.operations import (
     RenameStructChildrenOperation,
     RemoveStreamChildrenOperation,
     RemoveStructChildrenOperation,
+    StreamChildrenToListBlockOperation,
+    StreamChildrenToStreamBlockOperation,
 )
 
 
@@ -64,7 +66,7 @@ class FieldChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "char1",
-            ToListBlockOperation(block_name="list1"),
+            StreamChildrenToListBlockOperation(list_block_name="list1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -75,8 +77,39 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[1]["value"][0]["type"], "item")
         self.assertEqual(altered_raw_data[1]["value"][0]["value"], "Char Block 1")
 
-    def test_to_streamblock(self):
-        pass
+    def test_combine_to_streamblock(self):
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "char1",
+            StreamChildrenToStreamBlockOperation(
+                stream_block_name="stream1"
+            ),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(len(altered_raw_data), 2)
+        self.assertEqual(altered_raw_data[0]["type"], "char2")
+        self.assertEqual(altered_raw_data[1]["type"], "stream1")
+        self.assertEqual(len(altered_raw_data[1]["value"]), 2)
+        self.assertEqual(altered_raw_data[0]["value"][0]["type"], "char1")
+        self.assertEqual(altered_raw_data[0]["value"][1]["type"], "char1")
+
+    def test_combine_to_streamblock_multiple(self):
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "*",
+            StreamChildrenToStreamBlockOperation(
+                stream_block_name="stream1", block_names=["char1", "char2"]
+            ),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(len(altered_raw_data), 1)
+        self.assertEqual(altered_raw_data[0]["type"], "stream1")
+        self.assertEqual(len(altered_raw_data[0]["value"]), 3)
+        self.assertEqual(altered_raw_data[0]["value"][0]["type"], "char1")
+        self.assertEqual(altered_raw_data[0]["value"][1]["type"], "char2")
+        self.assertEqual(altered_raw_data[0]["value"][2]["type"], "char1")
 
 
 class FieldStructChildBlockTest(TestCase):

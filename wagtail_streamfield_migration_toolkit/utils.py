@@ -1,4 +1,3 @@
-from collections import deque
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
 from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
@@ -144,7 +143,7 @@ def apply_changes_to_raw_data(
             NOTE: When the path contains a ListBlock child, 'item' must be added to the block as
             the name of said child.
 
-            eg:- 'list1.item.stream1' where the list child is a StructBlock would point to,
+            eg:- 'list1.item.struct1' where the list child is a StructBlock would point to,
                 [
                     ...,
                     {
@@ -152,7 +151,7 @@ def apply_changes_to_raw_data(
                         value: [
                             {
                                 type: item,
-                                value: { ..., stream1: [...] }
+                                value: { ..., struct1: {...} }
                             },
                             ...
                         ]
