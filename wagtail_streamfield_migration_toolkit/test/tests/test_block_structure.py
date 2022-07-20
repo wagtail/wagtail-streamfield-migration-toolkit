@@ -27,7 +27,7 @@ class FieldChildBlockTest(TestCase):
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            None,
+            "",
             RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
@@ -41,7 +41,7 @@ class FieldChildBlockTest(TestCase):
     def test_rename_rest_intact(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            None,
+            "",
             RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
@@ -51,7 +51,7 @@ class FieldChildBlockTest(TestCase):
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
-            None,
+            "",
             RemoveStreamChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )

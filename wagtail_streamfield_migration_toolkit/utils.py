@@ -204,7 +204,7 @@ def apply_changes_to_raw_data(
                 [..., { type: simplestream, value: [..., { type: struct1, value: {...} }] }]
 
             NOTE: If we're directly applying changes on the top level stream block, then this will
-            be None.
+            be "".
 
             NOTE: When the path contains a ListBlock child, 'item' must be added to the block as
             the name of said child.
@@ -234,12 +234,12 @@ def apply_changes_to_raw_data(
         altered_raw_data:
     """
 
-    if block_path_str is not None:
-        block_path = block_path_str.split(".")
-    else:
-        # If block_path_str is None we're directly applying the operation on the top level
+    if block_path_str == "":
+        # If block_path_str is "", we're directly applying the operation on the top level
         # streamblock.
         block_path = []
+    else:
+        block_path = block_path_str.split(".")
     block_def = streamfield.field.stream_block
 
     altered_raw_data = map_block_value(
