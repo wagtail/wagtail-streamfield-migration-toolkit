@@ -16,13 +16,14 @@ from wagtail_streamfield_migration_toolkit.operations import (
 class FieldChildBlockTest(TestCase):
     """Changes to `char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1__char2__value="Char Block 2",
             content__2__char1__value="Char Block 1",
         ).content.raw_data
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -69,13 +70,14 @@ class FieldChildBlockTest(TestCase):
 class FieldStructChildBlockTest(TestCase):
     """Changes to `simplestruct.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="simplestruct",
             content__2="simplestruct",
         ).content.raw_data
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -135,7 +137,8 @@ class FieldStructChildBlockTest(TestCase):
 class FieldStreamChildBlock(TestCase):
     """Changes to `simplestream.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # TODO until support is available from wagtail-factories, manually write.
         raw_data = [
             {"type": "char1", "value": "Char Block 1"},
@@ -152,7 +155,7 @@ class FieldStreamChildBlock(TestCase):
                 "value": [{"type": "char1", "value": "Char Block 1"}],
             },
         ]
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -207,7 +210,8 @@ class FieldStreamChildBlock(TestCase):
 class FieldStructStreamChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestream.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
@@ -235,7 +239,7 @@ class FieldStructStreamChildBlockTest(TestCase):
             }
         )
 
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -304,7 +308,8 @@ class FieldStructStreamChildBlockTest(TestCase):
 class FieldStructStructChildBlockTest(TestCase):
     """Changes to `nestedstruct.simplestruct.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
@@ -313,7 +318,7 @@ class FieldStructStructChildBlockTest(TestCase):
             content__2__nestedstruct__list1__value="a",
             content__3="simplestruct",
         ).content.raw_data
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -388,7 +393,8 @@ class FieldStructStructChildBlockTest(TestCase):
 class FieldStreamStreamChildBlockTest(TestCase):
     """Changes to `nestedstream.stream1.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = [
             {"type": "char1", "value": "Char Block 1"},
             {
@@ -429,7 +435,7 @@ class FieldStreamStreamChildBlockTest(TestCase):
                 ],
             },
         ]
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -504,7 +510,8 @@ class FieldStreamStreamChildBlockTest(TestCase):
 class FieldStreamStructChildBlockTest(TestCase):
     "Changes to `nestedstream.simplestruct.char1`"
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # TODO rewrite with wagtail_factories when available
         raw_data = [
             {"type": "char1", "value": "Char Block 1"},
@@ -538,7 +545,7 @@ class FieldStreamStructChildBlockTest(TestCase):
                 ],
             },
         ]
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -615,7 +622,8 @@ class FieldStreamStructChildBlockTest(TestCase):
 class FieldListStreamChildBlockTest(TestCase):
     "Changes to `nestedlist_stream.item.char1`"
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # TODO rewrite with wagtail_factories when available
         raw_data = [
             {"type": "char1", "value": "Char Block 1"},
@@ -653,7 +661,7 @@ class FieldListStreamChildBlockTest(TestCase):
                 ],
             },
         ]
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -721,7 +729,8 @@ class FieldListStreamChildBlockTest(TestCase):
 class FieldListStructChildBlockTest(TestCase):
     """Changes to `nestedlist_struct.item.char1`"""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1__nestedlist_struct__0__label="Nested List Struct 1",
@@ -729,7 +738,7 @@ class FieldListStructChildBlockTest(TestCase):
             content__2__nestedlist_struct__0__label="Nested List Struct 3",
             content__3__simplestruct__label="Simple Struct 1",
         ).content.raw_data
-        self.raw_data = raw_data
+        cls.raw_data = raw_data
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
