@@ -1,4 +1,3 @@
-from collections import deque
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
 from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
@@ -14,6 +13,24 @@ def is_block_at_path_start(block_name, block_path):
 def map_block_value(
     block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
 ):
+    """
+    Maps the value of a block. 
+
+    Args:
+        block_value:
+            The value of the block. This would be a list or dict of children for structural blocks.
+        block_def:
+            The definition of the block.
+        block_path:
+            A '.' separated list of names of the blocks from the current block (not included) to
+            the nested block of which the value will be passed to the operation.
+        operation:
+            An Operation class instance (extends `BaseBlockOperation`), which has an `apply` method
+            for mapping values.
+
+    Returns:
+        mapped_value:
+    """
 
     # If the `block_path` length is 0, that means we've reached the end of the block path, that
     # is, the block where we need to apply the operation. Note that we are asking the user to
@@ -60,11 +77,27 @@ def map_block_value(
 
 
 def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
+    """
+    Maps each child block in a StreamBlock value.
+
+    Args:
+        stream_block_value:
+            The value of the StreamBlock, a list of child blocks
+        block_def:
+            The definition of the StreamBlock
+        block_path:
+            A '.' separated list of names of the blocks from the current block (not included) to
+            the nested block of which the value will be passed to the operation.
+
+    Returns
+        mapped_value:
+            The value of the StreamBlock after mapping all the children.
+    """
 
     mapped_value = []
     for child_block in stream_block_value:
 
-        # If the block is not at the start of `block_path`, then neither it nor it's children are
+        # If the block is not at the start of `block_path`, then neither it nor its children are
         # blocks that we need to change.
         if not is_block_at_path_start(child_block["type"], block_path):
             mapped_value.append(child_block)
@@ -83,14 +116,30 @@ def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
 
 
 def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
-    altered_value = {}
-    for key in struct_block_value:
-        child_value = struct_block_value[key]
+    """
+    Maps each child block in a StructBlock value.
 
-        # If the block is not at the start of `block_path`, then neither it nor it's children are
+    Args:
+        stream_block_value:
+            The value of the StructBlock, a dict of child blocks
+        block_def:
+            The definition of the StructBlock
+        block_path:
+            A '.' separated list of names of the blocks from the current block (not included) to
+            the nested block of which the value will be passed to the operation.
+
+    Returns
+        mapped_value:
+            The value of the StructBlock after mapping all the children.
+    """
+
+    mapped_value = {}
+    for (key, child_value) in struct_block_value.items():
+
+        # If the block is not at the start of `block_path`, then neither it nor its children are
         # blocks that we need to change.
         if not is_block_at_path_start(key, block_path):
-            altered_value[key] = child_value
+            mapped_value[key] = child_value
 
         else:
             child_block_def = block_def.child_blocks[key]
@@ -100,12 +149,28 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
                 block_path=block_path[1:],
                 **kwargs
             )
-            altered_value[key] = altered_child_value
+            mapped_value[key] = altered_child_value
 
-    return altered_value
+    return mapped_value
 
 
 def map_list_block_value(list_block_value, block_def, block_path, **kwargs):
+    """
+    Maps each child block in a ListBlock value.
+
+    Args:
+        stream_block_value:
+            The value of the ListBlock, a list of child blocks
+        block_def:
+            The definition of the ListBlock
+        block_path:
+            A '.' separated list of names of the blocks from the current block (not included) to
+            the nested block of which the value will be passed to the operation.
+
+    Returns
+        mapped_value:
+            The value of the ListBlock after mapping all the children.
+    """
 
     mapped_value = []
     for child_block in list_block_value:
@@ -132,8 +197,8 @@ def apply_changes_to_raw_data(
         raw_data:
             The current stream data (a list of top level blocks)
         block_path_str:
-            Should be a '.' separated list of names of the blocks from the top level block to
-            the direct parent of the nested block which is to be changed.
+            A '.' separated list of names of the blocks from the top level block to the nested 
+            block of which the value will be passed to the operation.
 
             eg:- 'simplestream.struct1' would point to,
                 [..., { type: simplestream, value: [..., { type: struct1, value: {...} }] }]
@@ -160,7 +225,7 @@ def apply_changes_to_raw_data(
                 ]
         operation:
             A subclass of `operations.BaseBlockOperation`. It will have the `apply` method
-            for applying changes to the parent block of the block type that must be changed.
+            for applying changes to the matching block values.
         streamfield:
             The streamfield for which data is being migrated. This is used to get the definitions
             of the blocks.

@@ -30,11 +30,11 @@ class RenameStructChildrenOperation(BaseBlockOperation):
 
     def apply(self, block_value):
         mapped_block_value = {}
-        for key in block_value:
+        for (key, value) in block_value.items():
             if key == self.old_name:
-                mapped_block_value[self.new_name] = block_value[key]
+                mapped_block_value[self.new_name] = value
             else:
-                mapped_block_value[key] = block_value[key]
+                mapped_block_value[key] = value
         return mapped_block_value
 
 
@@ -60,9 +60,9 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
 
     def apply(self, block_value):
         mapped_block_value = {}
-        for key in block_value:
+        for (key, value) in block_value.items():
             if key == self.name:
                 continue
             else:
-                mapped_block_value[key] = block_value[key]
+                mapped_block_value[key] = value
         return mapped_block_value

@@ -1,5 +1,4 @@
-from unittest import expectedFailure
-from django.test import SimpleTestCase, TestCase
+from django.test import TestCase
 
 from .. import factories, models
 from wagtail_streamfield_migration_toolkit.utils import apply_changes_to_raw_data
