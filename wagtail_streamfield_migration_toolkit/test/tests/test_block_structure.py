@@ -4,6 +4,7 @@ from django.test import SimpleTestCase, TestCase
 from .. import factories, models
 from wagtail_streamfield_migration_toolkit.utils import apply_changes_to_raw_data
 from wagtail_streamfield_migration_toolkit.operations import (
+    AlterCharBlockValue,
     RenameStreamChildrenOperation,
     RenameStructChildrenOperation,
     RemoveStreamChildrenOperation,
@@ -112,6 +113,22 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[0]["value"][0]["type"], "char1")
         self.assertEqual(altered_raw_data[0]["value"][1]["type"], "char2")
         self.assertEqual(altered_raw_data[0]["value"][2]["type"], "char1")
+
+    def test_alter_value(self):
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "char1",
+            AlterCharBlockValue(new_value="foo"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0]["type"], "char1")
+        self.assertEqual(altered_raw_data[1]["type"], "char2")
+        self.assertEqual(altered_raw_data[2]["type"], "char1")
+
+        self.assertEqual(altered_raw_data[0]["value"], "foo")
+        self.assertEqual(altered_raw_data[1]["value"], "Char Block 2")
+        self.assertEqual(altered_raw_data[2]["value"], "foo")
 
 
 class FieldStructChildBlockTest(TestCase):

@@ -119,4 +119,12 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
 
+class AlterCharBlockValue(BaseBlockOperation):
+    def __init__(self, new_value):
+        super().__init__()
+        self.new_value = new_value
+
+    def apply(self, block_value):
+        return self.new_value
+
 # TODO class ApplyMultipleOperation(BaseBlockOperation):
