@@ -4,9 +4,12 @@ from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
 
 
 # TODO handle block_defs not existing? we'll do this later
+# TODO handle old list format
 
 
-def is_block_at_path_start(block_name, block_path):
+def should_alter_block(block_name, block_path):
+    # If the block is not at the start of `block_path`, then neither it nor its children are
+    # blocks that we need to alter.
     return block_name == block_path[0]
 
 
@@ -14,7 +17,7 @@ def map_block_value(
     block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
 ):
     """
-    Maps the value of a block. 
+    Maps the value of a block.
 
     Args:
         block_value:
@@ -37,14 +40,13 @@ def map_block_value(
     # pass "item" as part of the block path for list children, so it won't give rise to any
     # problems here.
     if len(block_path) == 0:
-        mapped_value = operation.apply(block_value)
-        return mapped_value
+        return operation.apply(block_value)
 
     # Depending on whether the block is a ListBlock, StructBlock or StreamBlock we call a
     # different function to alter its children.
 
     if isinstance(block_def, StreamBlock):
-        mapped_value = map_stream_block_value(
+        return map_stream_block_value(
             block_value,
             operation=operation,
             block_def=block_def,
@@ -53,7 +55,7 @@ def map_block_value(
         )
 
     elif isinstance(block_def, ListBlock):
-        mapped_value = map_list_block_value(
+        return map_list_block_value(
             block_value,
             operation=operation,
             block_def=block_def,
@@ -62,7 +64,7 @@ def map_block_value(
         )
 
     elif isinstance(block_def, StructBlock):
-        mapped_value = map_struct_block_value(
+        return map_struct_block_value(
             block_value,
             operation=operation,
             block_def=block_def,
@@ -71,9 +73,7 @@ def map_block_value(
         )
 
     else:
-        raise ValueError("Unexpected Structural Block + {}".format(block_value))
-
-    return mapped_value
+        raise ValueError("Unexpected Structural Block: {}".format(block_value))
 
 
 def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
@@ -97,9 +97,7 @@ def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
     mapped_value = []
     for child_block in stream_block_value:
 
-        # If the block is not at the start of `block_path`, then neither it nor its children are
-        # blocks that we need to change.
-        if not is_block_at_path_start(child_block["type"], block_path):
+        if not should_alter_block(child_block["type"], block_path):
             mapped_value.append(child_block)
 
         else:
@@ -134,11 +132,9 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
     """
 
     mapped_value = {}
-    for (key, child_value) in struct_block_value.items():
+    for key, child_value in struct_block_value.items():
 
-        # If the block is not at the start of `block_path`, then neither it nor its children are
-        # blocks that we need to change.
-        if not is_block_at_path_start(key, block_path):
+        if not should_alter_block(key, block_path):
             mapped_value[key] = child_value
 
         else:
@@ -197,7 +193,7 @@ def apply_changes_to_raw_data(
         raw_data:
             The current stream data (a list of top level blocks)
         block_path_str:
-            A '.' separated list of names of the blocks from the top level block to the nested 
+            A '.' separated list of names of the blocks from the top level block to the nested
             block of which the value will be passed to the operation.
 
             eg:- 'simplestream.struct1' would point to,

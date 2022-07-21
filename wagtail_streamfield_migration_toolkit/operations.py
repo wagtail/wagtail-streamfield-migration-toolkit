@@ -30,11 +30,11 @@ class RenameStructChildrenOperation(BaseBlockOperation):
 
     def apply(self, block_value):
         mapped_block_value = {}
-        for (key, value) in block_value.items():
-            if key == self.old_name:
-                mapped_block_value[self.new_name] = value
+        for child_key, child_value in block_value.items():
+            if child_key == self.old_name:
+                mapped_block_value[self.new_name] = child_value
             else:
-                mapped_block_value[key] = value
+                mapped_block_value[child_key] = child_value
         return mapped_block_value
 
 
@@ -44,13 +44,11 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
         self.name = name
 
     def apply(self, block_value):
-        mapped_block_value = []
-        for child_block in block_value:
-            if child_block["type"] == self.name:
-                continue
-            else:
-                mapped_block_value.append(child_block)
-        return mapped_block_value
+        return [
+            child_block
+            for child_block in block_value
+            if child_block["type"] != self.name
+        ]
 
 
 class RemoveStructChildrenOperation(BaseBlockOperation):
@@ -59,10 +57,8 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
         self.name = name
 
     def apply(self, block_value):
-        mapped_block_value = {}
-        for (key, value) in block_value.items():
-            if key == self.name:
-                continue
-            else:
-                mapped_block_value[key] = value
-        return mapped_block_value
+        return {
+            child_key: child_value
+            for child_key, child_value in block_value.items()
+            if child_key != self.name
+        }
