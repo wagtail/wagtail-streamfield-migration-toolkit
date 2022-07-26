@@ -1,5 +1,5 @@
 import json
-from django.db.models import JSONField, F
+from django.db.models import JSONField, F, Q
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
@@ -7,6 +7,7 @@ from wagtail.blocks import StreamValue
 from wagtail_streamfield_migration_toolkit import utils
 
 
+# TODO different filename
 class MigrateStreamData(RunPython):
     def __init__(
         self,
@@ -35,55 +36,74 @@ class MigrateStreamData(RunPython):
         )
 
     def migrate_stream_data_forward(self, apps, schema_editor):
-        page_model = apps.get_model(self.app_name, self.model_name)
+        model = apps.get_model(self.app_name, self.model_name)
 
-        page_queryset = page_model.objects.annotate(
+        # TODO make sure these relations point to the correct tables
+        has_revisions = hasattr(model, "latest_revision")
+        has_live_revisions = hasattr(model, "live_revision")
+
+        model_queryset = model.objects.annotate(
             raw_content=Cast(F(self.field_name), JSONField())
         ).all()
-        updated_pages_buffer = []
-        for page in page_queryset.iterator(chunk_size=self.chunk_size):
 
-            altered_raw_data = page.raw_content
+        updated_model_instances_buffer = []
+        if has_revisions:
+            # use a set here since latest_revisions and live_revisions can overlap often
+            live_and_latest_revision_ids = set()
+        for instance in model_queryset.iterator(chunk_size=self.chunk_size):
+
+            # get these revision ids for filtering revisions later
+            if has_revisions:
+                live_and_latest_revision_ids.add(instance.latest_revision_id)
+                if has_live_revisions:
+                    live_and_latest_revision_ids.add(instance.live_revision_id)
+
+            altered_raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
                 altered_raw_data = utils.apply_changes_to_raw_data(
                     raw_data=altered_raw_data,
                     block_path_str=block_path_str,
                     operation=operation,
-                    streamfield=getattr(page, self.field_name),
+                    streamfield=getattr(model, self.field_name),
                 )
-                # - TODO add a return value to util to know if changes were made - Where would this be added?
+                # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 
-            stream_block = getattr(page, self.field_name).stream_block
+            stream_block = getattr(instance, self.field_name).stream_block
             setattr(
-                page,
+                instance,
                 self.field_name,
                 StreamValue(stream_block, altered_raw_data, is_lazy=True),
             )
-            updated_pages_buffer.append(page)
+            updated_model_instances_buffer.append(instance)
 
-            if len(updated_pages_buffer) == self.chunk_size:
-                page_model.objects.bulk_update(
-                    updated_pages_buffer, [self.field_name]
+            if len(updated_model_instances_buffer) == self.chunk_size:
+                model.objects.bulk_update(
+                    updated_model_instances_buffer, [self.field_name]
                 )
-                updated_pages_buffer = []
+                updated_model_instances_buffer = []
 
-        if len(updated_pages_buffer) > 0:
+        if len(updated_model_instances_buffer) > 0:
             # For any remaining chunks
-            page_model.objects.bulk_update(updated_pages_buffer, [self.field_name])
+            model.objects.bulk_update(updated_model_instances_buffer, [self.field_name])
 
+        # For models without revisions
+        if not has_revisions:
+            return
+
+        # TODO support for wagtail 3 ?
         ContentType = apps.get_model("contenttypes", "ContentType")
-        PageRevision = apps.get_model("wagtailcore", "PageRevision")
-        contenttype_id = ContentType.objects.get_for_model(page_model).id
+        Revision = apps.get_model("wagtailcore", "Revision")
+        contenttype_id = ContentType.objects.get_for_model(model).id
 
         if self.revisions_from is not None:
-            revision_queryset = PageRevision.objects.filter(
-                created_at__gte=self.revisions_from, content_type_id=contenttype_id
-            )
-        else:
-            revision_queryset = PageRevision.objects.filter(
+            revision_query = Q(
+                created_at__gte=self.revisions_from,
                 content_type_id=contenttype_id,
-            )
+            ) | Q(id__in=live_and_latest_revision_ids)
+        else:
+            revision_query = Q(content_type_id=contenttype_id)
+        revision_queryset = Revision.objects.filter(revision_query)
 
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
@@ -94,17 +114,17 @@ class MigrateStreamData(RunPython):
                     raw_data=altered_raw_data,
                     block_path_str=block_path_str,
                     operation=operation,
-                    streamfield=getattr(page, self.field_name),
+                    streamfield=getattr(model, self.field_name),
                 )
-                # - TODO add a return value to util to know if changes were made - Where would this be added?
+                # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 
             revision.content[self.field_name] = json.dumps(altered_raw_data)
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:
-                PageRevision.objects.bulk_update(updated_revisions_buffer, ["content"])
+                Revision.objects.bulk_update(updated_revisions_buffer, ["content"])
                 updated_revisions_buffer = []
 
         if len(updated_revisions_buffer) > 0:
-            PageRevision.objects.bulk_update(updated_revisions_buffer, ["content"])
+            Revision.objects.bulk_update(updated_revisions_buffer, ["content"])
