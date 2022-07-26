@@ -38,9 +38,17 @@ class MigrateStreamData(RunPython):
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
 
-        # TODO make sure these relations point to the correct tables
-        has_revisions = hasattr(model, "latest_revision")
-        has_live_revisions = hasattr(model, "live_revision")
+        Revision = apps.get_model("wagtailcore", "Revision")
+        # We check if the models have a field "latest_revision" and make sure it points to the
+        # Revision model. This relation is there on models with `RevisionMixin`.
+        has_revisions = (
+            hasattr(model, "latest_revision")
+            and model.latest_revision.field.remote_field.model == Revision
+        )
+        has_live_revisions = (
+            hasattr(model, "live_revision")
+            and model.live_revision.field.remote_field.model == Revision
+        )
 
         model_queryset = model.objects.annotate(
             raw_content=Cast(F(self.field_name), JSONField())
@@ -93,7 +101,6 @@ class MigrateStreamData(RunPython):
 
         # TODO support for wagtail 3 ?
         ContentType = apps.get_model("contenttypes", "ContentType")
-        Revision = apps.get_model("wagtailcore", "Revision")
         contenttype_id = ContentType.objects.get_for_model(model).id
 
         if self.revisions_from is not None:
