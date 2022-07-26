@@ -7,8 +7,9 @@ from wagtail.blocks import StreamValue
 from wagtail_streamfield_migration_toolkit import utils
 
 
-# TODO different filename
 class MigrateStreamData(RunPython):
+    """Subclass of RunPython for streamfield data migration operations"""
+
     def __init__(
         self,
         app_name,
@@ -19,6 +20,21 @@ class MigrateStreamData(RunPython):
         chunk_size=1024,
         **kwargs
     ):
+        """MigrateStreamData constructor
+
+        Args:
+            app_name (str): Name of the app.
+            model_name (str): Name of the model.
+            field_name (str): Name of the streamfield.
+            operations_and_block_paths (:obj:`list` of :obj:`tuple` of (:obj:`operation`, :obj:`str`)):
+                List of operations and corresponding block paths to apply.
+            revisions_from (:obj:`datetime`, optional): Date upto which updating revisions should
+                be limited to. Defaults to `None` (no limit).
+            chunk_size (:obj:`int`, optional): chunk size for queryset.iterator and bulk_update.
+                Defaults to 1024.
+            **kwargs: atomic,elidable,hints args for superclass RunPython can be given
+
+        """
         # TODO add checks to validate
         self.app_name = app_name
         self.model_name = model_name
@@ -39,12 +55,13 @@ class MigrateStreamData(RunPython):
         model = apps.get_model(self.app_name, self.model_name)
 
         Revision = apps.get_model("wagtailcore", "Revision")
-        # We check if the models have a field "latest_revision" and make sure it points to the
+        # We check if the models have a field `latest_revision` and make sure it points to the
         # Revision model. This relation is there on models with `RevisionMixin`.
         has_revisions = (
             hasattr(model, "latest_revision")
             and model.latest_revision.field.remote_field.model == Revision
         )
+        # Again, check for `live_revision`
         has_live_revisions = (
             hasattr(model, "live_revision")
             and model.live_revision.field.remote_field.model == Revision
@@ -108,6 +125,7 @@ class MigrateStreamData(RunPython):
                 created_at__gte=self.revisions_from,
                 content_type_id=contenttype_id,
             ) | Q(id__in=live_and_latest_revision_ids)
+            # we always update latest and live revision if available
         else:
             revision_query = Q(content_type_id=contenttype_id)
         revision_queryset = Revision.objects.filter(revision_query)
