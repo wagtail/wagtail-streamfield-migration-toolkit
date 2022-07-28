@@ -14,7 +14,7 @@ from wagtail_streamfield_migration_toolkit.operations import (
 
 
 class FieldChildBlockTest(TestCase):
-    """Changes to `char1`"""
+    """Tests involving changes to top level blocks"""
 
     @classmethod
     def setUpTestData(cls):
@@ -22,10 +22,17 @@ class FieldChildBlockTest(TestCase):
             content__0__char1__value="Char Block 1",
             content__1__char2__value="Char Block 2",
             content__2__char1__value="Char Block 1",
+            content__3__char2__value="Char Block 2",
         ).content.raw_data
         cls.raw_data = raw_data
 
     def test_rename(self):
+        """Rename `char1` blocks to `renamed1`
+
+        Check whether all char1 blocks have been renamed correctly.
+        Check whether other blocks are intact.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "",
@@ -39,17 +46,15 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[0]["value"], "Char Block 1")
         self.assertEqual(altered_raw_data[2]["value"], "Char Block 1")
 
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
-
         self.assertEqual(altered_raw_data[1]["type"], "char2")
+        self.assertEqual(altered_raw_data[3]["type"], "char2")
 
     def test_remove(self):
+        """Remove all `char1` blocks
+
+        Check whether all `char1` blocks have been removed.
+        Check whether other blocks are intact.
+        """
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "",
@@ -57,8 +62,9 @@ class FieldChildBlockTest(TestCase):
             streamfield=models.SampleModel.content,
         )
 
-        self.assertEqual(len(altered_raw_data), 1)
+        self.assertEqual(len(altered_raw_data), 2)
         self.assertEqual(altered_raw_data[0]["type"], "char2")
+        self.assertEqual(altered_raw_data[1]["type"], "char2")
 
     def test_to_listblock(self):
         pass
@@ -68,7 +74,10 @@ class FieldChildBlockTest(TestCase):
 
 
 class FieldStructChildBlockTest(TestCase):
-    """Changes to `simplestruct.char1`"""
+    """Tests involving changes to direct children of a StructBlock
+
+    We use `simplestruct` blocks as the StructBlocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -80,6 +89,13 @@ class FieldStructChildBlockTest(TestCase):
         cls.raw_data = raw_data
 
     def test_rename(self):
+        """Rename `simplestruct.char1` blocks to `renamed1`
+
+        Check whether all `simplestruct.char1` blocks have been renamed correctly.
+        Check whether other children of `simplestruct` are intact.
+        Check whether other toplevel blocks with name `char1` are intact.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "simplestruct",
@@ -92,22 +108,21 @@ class FieldStructChildBlockTest(TestCase):
         self.assertIn("renamed1", altered_raw_data[1]["value"])
         self.assertIn("renamed1", altered_raw_data[2]["value"])
 
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestruct",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
+        self.assertIn("char2", altered_raw_data[1]["value"])
+        self.assertIn("char2", altered_raw_data[2]["value"])
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
         self.assertEqual(altered_raw_data[1]["type"], "simplestruct")
         self.assertEqual(altered_raw_data[2]["type"], "simplestruct")
 
-        self.assertIn("char2", altered_raw_data[1]["value"])
-        self.assertIn("char2", altered_raw_data[2]["value"])
-
     def test_remove(self):
+        """Remove `simplestruct.char1` blocks
+
+        Check whether all `simplestruct.char1` blocks have been removed.
+        Check whether other children of `simplestruct` are intact.
+        Check whether other toplevel blocks with name `char1` are intact.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "simplestruct",
@@ -120,22 +135,17 @@ class FieldStructChildBlockTest(TestCase):
         self.assertNotIn("char1", altered_raw_data[1]["value"])
         self.assertNotIn("char1", altered_raw_data[2]["value"])
 
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestruct",
-            RemoveStructChildrenOperation(name="char1"),
-            streamfield=models.SampleModel.content,
-        )
-
-        self.assertEqual(len(altered_raw_data), 3)
-
         self.assertIn("char2", altered_raw_data[1]["value"])
         self.assertIn("char2", altered_raw_data[2]["value"])
 
+        self.assertEqual(len(altered_raw_data), 3)
+
 
 class FieldStreamChildBlock(TestCase):
-    """Changes to `simplestream.char1`"""
+    """Tests involving changes to direct children of a StreamBlock
+
+    We use `simplestream` blocks as the StreamBlocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -158,6 +168,13 @@ class FieldStreamChildBlock(TestCase):
         cls.raw_data = raw_data
 
     def test_rename(self):
+        """Rename `simplestream.char1` blocks to `renamed1`
+
+        Check whether all `simplestream.char1` blocks have been renamed correctly.
+        Check whether other children of `simplestream` are intact.
+        Check whether other toplevel blocks with name `char1` are intact.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "simplestream",
@@ -169,21 +186,20 @@ class FieldStreamChildBlock(TestCase):
         self.assertEqual(altered_raw_data[1]["value"][2]["type"], "renamed1")
         self.assertEqual(altered_raw_data[2]["value"][0]["type"], "renamed1")
 
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestream",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
+        self.assertEqual(altered_raw_data[1]["value"][1]["type"], "char2")
 
         self.assertEqual(altered_raw_data[0]["type"], "char1")
         self.assertEqual(altered_raw_data[1]["type"], "simplestream")
         self.assertEqual(altered_raw_data[2]["type"], "simplestream")
 
-        self.assertEqual(altered_raw_data[1]["value"][1]["type"], "char2")
-
     def test_remove(self):
+        """Remove `simplestream.char1` blocks
+
+        Check whether all `simplestream.char1` blocks have been removed.
+        Check whether other children of `simplestream` are intact.
+        Check whether other toplevel blocks with name `char1` are intact.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "simplestream",
@@ -194,14 +210,6 @@ class FieldStreamChildBlock(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"]), 1)
         self.assertEqual(len(altered_raw_data[2]["value"]), 0)
 
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestream",
-            RemoveStreamChildrenOperation(name="char1"),
-            streamfield=models.SampleModel.content,
-        )
+        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char2")
 
         self.assertEqual(len(altered_raw_data), 3)
-
-        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char2")
