@@ -4,17 +4,21 @@ from django.test import SimpleTestCase, TestCase
 from .. import factories, models
 from wagtail_streamfield_migration_toolkit.utils import apply_changes_to_raw_data
 from wagtail_streamfield_migration_toolkit.operations import (
-    AlterCharBlockValue,
+    AlterBlockValueOperation,
+    ListChildrenToStructBlockOperation,
     RenameStreamChildrenOperation,
     RenameStructChildrenOperation,
     RemoveStreamChildrenOperation,
     RemoveStructChildrenOperation,
     StreamChildrenToListBlockOperation,
     StreamChildrenToStreamBlockOperation,
+    StreamChildrenToStructBlockOperation,
 )
 
 
 # TODO add asserts for ids
+# TODO add docsrtings for tests
+# TODO split by nesting level into files
 
 
 class FieldChildBlockTest(TestCase):
@@ -114,11 +118,26 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[0]["value"][1]["type"], "char2")
         self.assertEqual(altered_raw_data[0]["value"][2]["type"], "char1")
 
+    def test_to_structblock(self):
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            None,
+            StreamChildrenToStructBlockOperation("char1", "struct1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0]["type"], "struct1")
+        self.assertEqual(altered_raw_data[1]["type"], "char2")
+        self.assertEqual(altered_raw_data[2]["type"], "struct1")
+
+        self.assertIn("char1", altered_raw_data[0]["value"])
+        self.assertIn("char1", altered_raw_data[2]["value"])
+
     def test_alter_value(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "char1",
-            AlterCharBlockValue(new_value="foo"),
+            AlterBlockValueOperation(new_value="foo"),
             streamfield=models.SampleModel.content,
         )
 
@@ -754,7 +773,7 @@ class FieldListStreamChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[1]["value"][0]["value"][1]["type"], "char2")
         self.assertEqual(altered_raw_data[3]["value"][0]["type"], "char1")
         self.assertEqual(altered_raw_data[3]["value"][1]["type"], "char2")
-
+        
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,

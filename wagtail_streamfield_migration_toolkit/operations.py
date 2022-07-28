@@ -1,5 +1,6 @@
 from wagtail.images.blocks import ImageChooserBlock
 
+# TODO add docstring here
 
 class BaseBlockOperation:
     def __init__(self):
@@ -119,7 +120,7 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
 
-class AlterCharBlockValue(BaseBlockOperation):
+class AlterBlockValueOperation(BaseBlockOperation):
     def __init__(self, new_value):
         super().__init__()
         self.new_value = new_value
@@ -127,4 +128,42 @@ class AlterCharBlockValue(BaseBlockOperation):
     def apply(self, block_value):
         return self.new_value
 
-# TODO class ApplyMultipleOperation(BaseBlockOperation):
+
+class StreamChildrenToStructBlockOperation(BaseBlockOperation):
+    def __init__(self, block_name, struct_block_name):
+        super().__init__()
+        self.block_name = block_name
+        self.struct_block_name = struct_block_name
+
+    def apply(self, block_value):
+        mapped_block_value = []
+        for child_block in block_value:
+            if child_block["type"] == self.block_name:
+                mapped_block_value.append({
+                    **child_block,
+                    "type": self.struct_block_name,
+                    "value": {
+                        self.block_name: child_block["value"]
+                    }
+                })
+            else:
+                mapped_block_value.append(child_block)
+        return mapped_block_value
+
+
+# note to remember old list format
+class ListChildrenToStructBlockOperation(BaseBlockOperation):
+    def __init__(self, block_name):
+        super().__init__()
+        self.block_name = block_name
+
+    def apply(self, block_value):
+        mapped_block_value = []
+        for child_block in block_value:
+            mapped_block_value.append({
+                **child_block,
+                "value": {
+                    self.block_name: child_block["value"]
+                }
+            })
+        return mapped_block_value
