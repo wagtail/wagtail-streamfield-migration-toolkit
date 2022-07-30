@@ -28,14 +28,25 @@ class MigrateStreamData(RunPython):
             field_name (str): Name of the streamfield.
             operations_and_block_paths (:obj:`list` of :obj:`tuple` of (:obj:`operation`, :obj:`str`)):
                 List of operations and corresponding block paths to apply.
-            revisions_from (:obj:`datetime`, optional): Date upto which updating revisions should
-                be limited to. Defaults to `None` (no limit).
+            revisions_from (:obj:`datetime`, optional): Only revisions created from this date
+                onwards will be updated. Passing `None` updates all revisions. Defaults to `None`.
             chunk_size (:obj:`int`, optional): chunk size for queryset.iterator and bulk_update.
                 Defaults to 1024.
-            **kwargs: atomic,elidable,hints args for superclass RunPython can be given
+            **kwargs: atomic, elidable, hints for superclass RunPython can be given
 
+        Example:
+            Renaming a block named `field1` to `block1`::
+                MigrateStreamData(
+                    app_name="blog",
+                    model_name="BlogPage",
+                    field_name="content",
+                    operations_and_block_paths=[
+                        (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), ""),
+                    ],
+                    revisions_from=datetime.date(2022, 7, 25)
+                ),
         """
-        # TODO add checks to validate
+
         self.app_name = app_name
         self.model_name = model_name
         self.field_name = field_name
