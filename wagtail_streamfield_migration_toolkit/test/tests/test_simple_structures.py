@@ -16,6 +16,7 @@ from wagtail_streamfield_migration_toolkit.operations import (
 
 
 # TODO add asserts for ids
+# TODO new wagtailfactory
 
 
 class FieldChildBlockTest(TestCase):
@@ -268,7 +269,7 @@ class FieldStructChildBlockTest(TestCase):
         self.assertEqual(len(altered_raw_data), 3)
 
 
-class FieldStreamChildBlock(TestCase):
+class FieldStreamChildBlockTest(TestCase):
     """Tests involving changes to direct children of a StreamBlock
 
     We use `simplestream` blocks as the StreamBlocks here.
@@ -339,4 +340,46 @@ class FieldStreamChildBlock(TestCase):
 
         self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char2")
 
-        self.assertEqual(len(altered_raw_data), 3)
+
+class FieldListChildBlockTest(TestCase):
+    """Tests involving changes to direct children of a ListBlock
+
+    We use `simplelist` blocks as the ListBlocks here.
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        raw_data = factories.SampleModelFactory(
+            content__0__char1__value="Char Block 1",
+            content__1__simplelist__0="Foo 1",
+            content__1__simplelist__1="Foo 2",
+            content__2__simplelist__0="Foo 3",
+        ).content.raw_data
+        cls.raw_data = raw_data
+
+    def test_to_structblock(self):
+        """Turn each list child into a StructBlock and move value inside as a child named `text`
+
+        Check whether each list child has been converted to a StructBlock with a child named `text`
+        in it.
+        Check whether the previous value of each list child is now the value that `text` takes.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "simplelist",
+            ListChildrenToStructBlockOperation(block_name="text"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(type(altered_raw_data[1]["value"][0]["value"]), dict)
+        self.assertEqual(type(altered_raw_data[1]["value"][1]["value"]), dict)
+        self.assertEqual(type(altered_raw_data[2]["value"][0]["value"]), dict)
+
+        self.assertIn("text", altered_raw_data[1]["value"][0]["value"])
+        self.assertIn("text", altered_raw_data[1]["value"][1]["value"])
+        self.assertIn("text", altered_raw_data[2]["value"][0]["value"])
+
+        self.assertEqual(altered_raw_data[1]["value"][0]["value"]["text"], "Foo 1")
+        self.assertEqual(altered_raw_data[1]["value"][1]["value"]["text"], "Foo 2")
+        self.assertEqual(altered_raw_data[2]["value"][0]["value"]["text"], "Foo 3")
