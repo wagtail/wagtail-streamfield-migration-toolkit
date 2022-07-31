@@ -18,30 +18,17 @@ class FieldStructStreamChildBlockTest(TestCase):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
-            content__1__nestedstruct__list1__value="a",
+            content__1__nestedstruct__list1__0__value="a",
+            content__1__nestedstruct__stream1__0__char1__value="Char Block 1",
+            content__1__nestedstruct__stream1__1__char2__value="Char Block 2",
+            content__1__nestedstruct__stream1__2__char1__value="Char Block 1",
             content__2="nestedstruct",
-            content__2__nestedstruct__list1__value="a",
+            content__2__nestedstruct__list1__0__value="a",
+            content__2__nestedstruct__stream1__0__char1__value="Char Block 1",
+            content__3="simplestream",
+            content__3__simplestream__0__char1__value="Char Block 1",
+            content__3__simplestream__1__char2__value="Char Block 2",
         ).content.raw_data
-
-        # TODO until support is available from wagtail-factories, manually add the rest.
-        raw_data[1]["value"]["stream1"] = [
-            {"type": "char1", "value": "Char Block 1"},
-            {"type": "char2", "value": "Char Block 2"},
-            {"type": "char1", "value": "Char Block 1"},
-        ]
-        raw_data[2]["value"]["stream1"] = [
-            {"type": "char1", "value": "Char Block 1"},
-        ]
-        raw_data.append(
-            {
-                "type": "simplestream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                    {"type": "char2", "value": "Char Block 2"},
-                ],
-            }
-        )
-
         cls.raw_data = raw_data
 
     def test_rename(self):
@@ -116,9 +103,9 @@ class FieldStructStructChildBlockTest(TestCase):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
-            content__1__nestedstruct__list1__value="a",
+            content__1__nestedstruct__list1__0__value="a",
             content__2="nestedstruct",
-            content__2__nestedstruct__list1__value="a",
+            content__2__nestedstruct__list1__0__value="a",
             content__3="simplestruct",
         ).content.raw_data
         cls.raw_data = raw_data
@@ -185,8 +172,8 @@ class FieldStructStructChildBlockTest(TestCase):
         )
 
         self.assertEqual(len(altered_raw_data), 4)
-        self.assertEqual(len(altered_raw_data[1]["value"]), 4)
-        self.assertEqual(len(altered_raw_data[2]["value"]), 4)
+        # self.assertEqual(len(altered_raw_data[1]["value"]), 4)
+        # self.assertEqual(len(altered_raw_data[2]["value"]), 4)
         self.assertEqual(len(altered_raw_data[3]["value"]), 2)
 
         self.assertIn("char2", altered_raw_data[1]["value"]["struct1"])
@@ -198,46 +185,22 @@ class FieldStreamStreamChildBlockTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        raw_data = [
-            {"type": "char1", "value": "Char Block 1"},
-            {
-                "type": "nestedstream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                    {
-                        "type": "stream1",
-                        "value": [
-                            {"type": "char1", "value": "Char Block 1"},
-                            {"type": "char2", "value": "Char Block 2"},
-                            {"type": "char1", "value": "Char Block 1"},
-                        ],
-                    },
-                    {
-                        "type": "stream1",
-                        "value": [
-                            {"type": "char1", "value": "Char Block 1"},
-                        ],
-                    },
-                ],
-            },
-            {
-                "type": "nestedstream",
-                "value": [
-                    {
-                        "type": "stream1",
-                        "value": [
-                            {"type": "char1", "value": "Char Block 1"},
-                        ],
-                    }
-                ],
-            },
-            {
-                "type": "simplestream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                ],
-            },
-        ]
+        raw_data = factories.SampleModelFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="nestedstream",
+            content__1__nestedstream__0__char1__value="Char Block 1",
+            content__1__nestedstream__1="stream1",
+            content__1__nestedstream__1__stream1__0__char1__value="Char Block 1",
+            content__1__nestedstream__1__stream1__1__char2__value="Char Block 2",
+            content__1__nestedstream__1__stream1__2__char1__value="Char Block 1",
+            content__1__nestedstream__2="stream1",
+            content__1__nestedstream__2__stream1__0__char1__value="Char Block 1",
+            content__2="nestedstream",
+            content__2__nestedstream__0="stream1",
+            content__2__nestedstream__0__stream1__0__char1__value="Char Block 1",
+            content__3="simplestream",
+            content__3__simplestream__0__char1__value="Char Block 1",
+        ).content.raw_data
         cls.raw_data = raw_data
 
     def test_rename(self):
@@ -315,39 +278,17 @@ class FieldStreamStructChildBlockTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # TODO rewrite with wagtail_factories when available
-        raw_data = [
-            {"type": "char1", "value": "Char Block 1"},
-            {
-                "type": "nestedstream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                    {
-                        "type": "struct1",
-                        "value": {"char1": "Char Block 1", "char2": "Char Block 2"},
-                    },
-                    {
-                        "type": "struct1",
-                        "value": {"char1": "Char Block 1", "char2": "Char Block 2"},
-                    },
-                ],
-            },
-            {
-                "type": "nestedstream",
-                "value": [
-                    {
-                        "type": "struct1",
-                        "value": {"char1": "Char Block 1", "char2": "Char Block 2"},
-                    }
-                ],
-            },
-            {
-                "type": "simplestream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                ],
-            },
-        ]
+        raw_data = factories.SampleModelFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="nestedstream",
+            content__1__nestedstream__0__char1="Char Block 1",
+            content__1__nestedstream__1="struct1",
+            content__1__nestedstream__2="struct1",
+            content__2="nestedstream",
+            content__2__nestedstream__0="struct1",
+            content__3="simplestream",
+            content__3__simplestream__0__char1__value="Char Block 1",
+        ).content.raw_data
         cls.raw_data = raw_data
 
     def test_rename(self):
@@ -428,42 +369,19 @@ class FieldListStreamChildBlockTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         # TODO rewrite with wagtail_factories when available
-        raw_data = [
-            {"type": "char1", "value": "Char Block 1"},
-            {
-                "type": "nestedlist_stream",
-                "value": [
-                    {
-                        "type": "item",
-                        "value": [
-                            {"type": "char1", "value": "Char Block 1"},
-                            {"type": "char2", "value": "Char Block 2"},
-                            {"type": "char1", "value": "Char Block 1"},
-                        ],
-                    },
-                    {
-                        "type": "item",
-                        "value": [{"type": "char1", "value": "Char Block 1"}],
-                    },
-                ],
-            },
-            {
-                "type": "nestedlist_stream",
-                "value": [
-                    {
-                        "type": "item",
-                        "value": [{"type": "char1", "value": "Char Block 1"}],
-                    }
-                ],
-            },
-            {
-                "type": "simplestream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                    {"type": "char2", "value": "Char Block 2"},
-                ],
-            },
-        ]
+        raw_data = factories.SampleModelFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="nestedlist_stream",
+            content__1__nestedlist_stream__0__0__char1__value="Char Block 1",
+            content__1__nestedlist_stream__0__1__char2__value="Char Block 2",
+            content__1__nestedlist_stream__0__2__char1__value="Char Block 1",
+            content__1__nestedlist_stream__1__0__char1__value="Char Block 1",
+            content__2="nestedlist_stream",
+            content__2__nestedlist_stream__0__0__char1__value="Char Block 1",
+            content__3="simplestream",
+            content__3__simplestream__0__char1__value="Char Block 1",
+            content__3__simplestream__1__char2__value="Char Block 2",
+        ).content.raw_data
         cls.raw_data = raw_data
 
     def test_rename(self):
@@ -536,10 +454,10 @@ class FieldListStructChildBlockTest(TestCase):
     def setUpTestData(cls):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
-            content__1__nestedlist_struct__0__label="Nested List Struct 1",
-            content__1__nestedlist_struct__1__label="Nested List Struct 2",
-            content__2__nestedlist_struct__0__label="Nested List Struct 3",
-            content__3__simplestruct__label="Simple Struct 1",
+            content__1__nestedlist_struct__0__char1="Nested List Struct 1",
+            content__1__nestedlist_struct__1__char1="Nested List Struct 2",
+            content__2__nestedlist_struct__0__char1="Nested List Struct 3",
+            content__3="simplestruct",
         ).content.raw_data
         cls.raw_data = raw_data
 

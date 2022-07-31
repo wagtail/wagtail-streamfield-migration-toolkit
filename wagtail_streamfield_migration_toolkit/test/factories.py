@@ -13,40 +13,51 @@ class SimpleStructBlockFactory(wagtail_factories.StructBlockFactory):
         model = models.SimpleStructBlock
 
 
-# TODO SimpleStreamBlockFactory
+class SimpleStreamBlockFactory(wagtail_factories.StreamBlockFactory):
+    char1 = "Char Block 1"
+    char2 = "Char Block 2"
+
+    class Meta:
+        model = models.SimpleStreamBlock
 
 
 class NestedStructBlockFactory(wagtail_factories.StructBlockFactory):
     char1 = "Char Block 1"
     struct1 = factory.SubFactory(SimpleStructBlockFactory)
-    # stream1
+    stream1 = factory.SubFactory(SimpleStreamBlockFactory)
     list1 = wagtail_factories.ListBlockFactory(wagtail_factories.CharBlockFactory)
 
     class Meta:
         model = models.NestedStructBlock
 
 
-# TODO NestedStreamBlockFactory
+class NestedStreamBlockFactory(wagtail_factories.StreamBlockFactory):
+    char1 = "Char Block 1"
+    struct1 = factory.SubFactory(SimpleStructBlockFactory)
+    stream1 = factory.SubFactory(SimpleStreamBlockFactory)
+    list1 = wagtail_factories.ListBlockFactory(wagtail_factories.CharBlockFactory)
+
+    class Meta:
+        model = models.NestedStreamBlock
+
+
+class BaseStreamBlockFactory(wagtail_factories.StreamBlockFactory):
+    char1 = "Char Block 1"
+    char2 = "Char Block 2"
+    simplestruct = factory.SubFactory(SimpleStructBlockFactory)
+    simplestream = factory.SubFactory(SimpleStreamBlockFactory)
+    simplelist = wagtail_factories.ListBlockFactory(wagtail_factories.CharBlockFactory)
+    nestedstruct = factory.SubFactory(NestedStructBlockFactory)
+    nestedstream = factory.SubFactory(NestedStreamBlockFactory)
+    nestedlist_struct = wagtail_factories.ListBlockFactory(SimpleStructBlockFactory)
+    nestedlist_stream = wagtail_factories.ListBlockFactory(SimpleStreamBlockFactory)
+
+    class Meta:
+        model = models.BaseStreamBlock
 
 
 class SampleModelFactory(DjangoModelFactory):
-    content = wagtail_factories.StreamFieldFactory(
-        {
-            "char1": wagtail_factories.CharBlockFactory,
-            "char2": wagtail_factories.CharBlockFactory,
-            "simplestruct": SimpleStructBlockFactory,
-            # TODO "simplestream"
-            "simplelist": wagtail_factories.ListBlockFactory(
-                wagtail_factories.CharBlockFactory
-            ),
-            "nestedstruct": NestedStructBlockFactory,
-            # TODO "nestedstream"
-            "nestedlist_struct": wagtail_factories.ListBlockFactory(
-                SimpleStructBlockFactory
-            ),
-            # TODO "nestedlist_stream"
-        }
-    )
+    content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
 
     class Meta:
         model = models.SampleModel

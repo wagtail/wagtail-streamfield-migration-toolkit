@@ -16,7 +16,6 @@ from wagtail_streamfield_migration_toolkit.operations import (
 
 
 # TODO add asserts for ids
-# TODO new wagtailfactory
 
 
 class FieldChildBlockTest(TestCase):
@@ -277,22 +276,15 @@ class FieldStreamChildBlockTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # TODO until support is available from wagtail-factories, manually write.
-        raw_data = [
-            {"type": "char1", "value": "Char Block 1"},
-            {
-                "type": "simplestream",
-                "value": [
-                    {"type": "char1", "value": "Char Block 1"},
-                    {"type": "char2", "value": "Char Block 2"},
-                    {"type": "char1", "value": "Char Block 1"},
-                ],
-            },
-            {
-                "type": "simplestream",
-                "value": [{"type": "char1", "value": "Char Block 1"}],
-            },
-        ]
+        raw_data = factories.SampleModelFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="simplestream",
+            content__1__simplestream__0__char1__value="Char Block 1",
+            content__1__simplestream__1__char2__value="Char Block 2",
+            content__1__simplestream__2__char1__value="Char Block 1",
+            content__2="simplestream",
+            content__2__simplestream__0__char1__value="Char Block 1",
+        ).content.raw_data
         cls.raw_data = raw_data
 
     def test_rename(self):
