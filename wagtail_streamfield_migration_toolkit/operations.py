@@ -8,13 +8,13 @@ class BaseBlockOperation:
 
 class RenameStreamChildrenOperation(BaseBlockOperation):
     """Renames all StreamBlock children of the given type
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StreamBlock
         which contains the blocks to be renamed, not the block being renamed.
 
     Attributes:
-        old_name (str): name of the child block type to be renamed 
+        old_name (str): name of the child block type to be renamed
         new_name (str): new name to rename to
     """
 
@@ -35,13 +35,13 @@ class RenameStreamChildrenOperation(BaseBlockOperation):
 
 class RenameStructChildrenOperation(BaseBlockOperation):
     """Renames all StructBlock children of the given type
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StructBlock
         which contains the blocks to be renamed, not the block being renamed.
 
     Attributes:
-        old_name (str): name of the child block type to be renamed 
+        old_name (str): name of the child block type to be renamed
         new_name (str): new name to rename to
     """
 
@@ -62,13 +62,13 @@ class RenameStructChildrenOperation(BaseBlockOperation):
 
 class RemoveStreamChildrenOperation(BaseBlockOperation):
     """Removes all StreamBlock children of the given type
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StreamBlock
         which contains the blocks to be removed, not the block being removed.
 
     Attributes:
-        name (str): name of the child block type to be removed 
+        name (str): name of the child block type to be removed
     """
 
     def __init__(self, name):
@@ -85,13 +85,13 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
 
 class RemoveStructChildrenOperation(BaseBlockOperation):
     """Removes all StructBlock children of the given type
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StructBlock
         which contains the blocks to be removed, not the block being removed.
 
     Attributes:
-        name (str): name of the child block type to be removed 
+        name (str): name of the child block type to be removed
     """
 
     def __init__(self, name):
@@ -108,13 +108,13 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
 
 class StreamChildrenToListBlockOperation(BaseBlockOperation):
     """Combines StreamBlock children of the given type into a new ListBlock
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StreamBlock
         which contains the blocks to be combined, not the child block itself.
 
     Attributes:
-        block_name (str): name of the child block type to be combined 
+        block_name (str): name of the child block type to be combined
         list_block_name (str): name of the new ListBlock type
     """
 
@@ -146,13 +146,13 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
 
 class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
     """Combines StreamBlock children of the given types into a new StreamBlock
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StreamBlock
         which contains the blocks to be combined, not the child block itself.
 
     Attributes:
-        block_names (:obj:`list` of :obj:`str`): names of the child block types to be combined 
+        block_names (:obj:`list` of :obj:`str`): names of the child block types to be combined
         stream_block_name (str): name of the new StreamBlock type
     """
 
@@ -180,9 +180,9 @@ class AlterBlockValueOperation(BaseBlockOperation):
     """Alters the value of each block to the given value
 
     Attributes:
-        new_value : new value to change to    
+        new_value : new value to change to
     """
-    
+
     def __init__(self, new_value):
         super().__init__()
         self.new_value = new_value
@@ -191,11 +191,10 @@ class AlterBlockValueOperation(BaseBlockOperation):
         return self.new_value
 
 
-# TODO what happens to IDs here
 class StreamChildrenToStructBlockOperation(BaseBlockOperation):
     """Move each StreamBlock child of the given type inside a new StructBlock
 
-    A new StructBlock will be created as a child of the parent StreamBlock for each child block of 
+    A new StructBlock will be created as a child of the parent StreamBlock for each child block of
     the given type, and then that child block will be moved from the parent StreamBlocks children
     inside the new StructBlock as a child of that StructBlock.
 
@@ -208,8 +207,8 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
 
             [
                 ...
-                { "type": "char1", ... },
-                { "type": "char1", ... },
+                { "type": "char1", "value": "Value1", ... },
+                { "type": "char1", "value": "Value2", ... },
                 ...
             ]
 
@@ -221,17 +220,21 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
 
             [
                 ...
-                { "type": "struct1", "value": { "char1": "..." } },
-                { "type": "struct1", "value": { "char1": "..." } },
+                { "type": "struct1", "value": { "char1": "Value1" } },
+                { "type": "struct1", "value": { "char1": "Value2" } },
                 ...
             ]
-    
+
     Note:
         The `block_path_str` when using this operation should point to the parent StreamBlock
         which contains the blocks to be combined, not the child block itself.
 
+    Note:
+        Block ids are not preserved here since the new blocks are structurally different than the
+        previous blocks.
+
     Attributes:
-        block_names (str): names of the child block types to be combined 
+        block_names (str): names of the child block types to be combined
         struct_block_name (str): name of the new StructBlock type
     """
 
@@ -269,3 +272,6 @@ class ListChildrenToStructBlockOperation(BaseBlockOperation):
                 {**child_block, "value": {self.block_name: child_block["value"]}}
             )
         return mapped_block_value
+
+
+# TODO BaseListBlockUpgradeOperation

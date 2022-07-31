@@ -171,6 +171,9 @@ def map_list_block_value(list_block_value, block_def, block_path, **kwargs):
     mapped_value = []
     for child_block in list_block_value:
 
+        # TODO consider old format, later PR
+        # utility to generate  for new format
+
         mapped_child_value = map_block_value(
             child_block["value"],
             block_def=block_def.child_block,
