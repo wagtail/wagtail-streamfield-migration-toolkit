@@ -10,8 +10,14 @@ from wagtail_streamfield_migration_toolkit.operations import (
 )
 
 
+# TODO add asserts for ids
+
+
 class FieldStructStreamChildBlockTest(TestCase):
-    """Changes to `nestedstruct.simplestream.char1`"""
+    """Tests involving changes to children of a StreamBlock nested inside a StructBlock
+
+    We use `nestedstruct.simplestream` blocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -31,6 +37,55 @@ class FieldStructStreamChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedstruct.stream1",
+            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+
+        for key in self.raw_data[1]["value"].keys():
+            self.assertIn(key, altered_raw_data[1]["value"])
+        for key in self.raw_data[1]["value"].keys():
+            self.assertIn(key, altered_raw_data[2]["value"])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"]["char1"], self.raw_data[1]["value"]["char1"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["char1"], self.raw_data[2]["value"]["char1"]
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["struct1"],
+            self.raw_data[1]["value"]["struct1"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["struct1"],
+            self.raw_data[2]["value"]["struct1"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["list1"], self.raw_data[1]["value"]["list1"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["list1"], self.raw_data[2]["value"]["list1"]
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -43,28 +98,35 @@ class FieldStructStreamChildBlockTest(TestCase):
         self.assertEqual(altered_raw_data[1]["value"]["stream1"][2]["type"], "renamed1")
         self.assertEqual(altered_raw_data[2]["value"]["stream1"][0]["type"], "renamed1")
 
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][0]["id"],
+            self.raw_data[1]["value"]["stream1"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][2]["id"],
+            self.raw_data[1]["value"]["stream1"][2]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["stream1"][0]["id"],
+            self.raw_data[2]["value"]["stream1"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][0]["value"],
+            self.raw_data[1]["value"]["stream1"][0]["value"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][2]["value"],
+            self.raw_data[1]["value"]["stream1"][2]["value"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["stream1"][0]["value"],
+            self.raw_data[2]["value"]["stream1"][0]["value"],
         )
 
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedstruct")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedstruct")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestream")
-
-        self.assertIn("char1", altered_raw_data[1]["value"])
-        self.assertIn("stream1", altered_raw_data[1]["value"])
-        self.assertIn("struct1", altered_raw_data[1]["value"])
-        self.assertIn("list1", altered_raw_data[1]["value"])
-
-        self.assertEqual(altered_raw_data[3]["value"][0]["type"], "char1")
-        self.assertEqual(altered_raw_data[3]["value"][1]["type"], "char2")
-
-        self.assertEqual(altered_raw_data[1]["value"]["stream1"][1]["type"], "char2")
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][1],
+            self.raw_data[1]["value"]["stream1"][1],
+        )
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -77,26 +139,17 @@ class FieldStructStreamChildBlockTest(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"]["stream1"]), 1)
         self.assertEqual(len(altered_raw_data[2]["value"]["stream1"]), 0)
 
-        self.assertNotEqual(altered_raw_data[1]["value"]["stream1"][0]["type"], "char1")
-
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.stream1",
-            RemoveStreamChildrenOperation(name="char1"),
-            streamfield=models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"][0],
+            self.raw_data[1]["value"]["stream1"][1],
         )
-
-        self.assertEqual(len(altered_raw_data), 4)
-        self.assertEqual(len(altered_raw_data[1]["value"]), 4)
-        self.assertEqual(len(altered_raw_data[2]["value"]), 4)
-        self.assertEqual(len(altered_raw_data[3]["value"]), 2)
-
-        self.assertEqual("char2", altered_raw_data[1]["value"]["stream1"][0]["type"])
 
 
 class FieldStructStructChildBlockTest(TestCase):
-    """Changes to `nestedstruct.simplestruct.char1`"""
+    """Tests involving changes to a children of a StructBlock nested inside a StructBlock
+
+    We use `nestedstruct.simplestruct` blocks here
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -110,6 +163,55 @@ class FieldStructStructChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedstruct.struct1",
+            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+
+        for key in self.raw_data[1]["value"].keys():
+            self.assertIn(key, altered_raw_data[1]["value"])
+        for key in self.raw_data[1]["value"].keys():
+            self.assertIn(key, altered_raw_data[2]["value"])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"]["char1"], self.raw_data[1]["value"]["char1"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["char1"], self.raw_data[2]["value"]["char1"]
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["stream1"],
+            self.raw_data[1]["value"]["stream1"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["stream1"],
+            self.raw_data[2]["value"]["stream1"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"]["list1"], self.raw_data[1]["value"]["list1"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"]["list1"], self.raw_data[2]["value"]["list1"]
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -122,29 +224,6 @@ class FieldStructStructChildBlockTest(TestCase):
         self.assertNotIn("char1", altered_raw_data[2]["value"]["struct1"])
         self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"])
         self.assertIn("renamed1", altered_raw_data[2]["value"]["struct1"])
-
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
-
-        self.assertEqual(len(altered_raw_data), 4)
-
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedstruct")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedstruct")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestruct")
-
-        self.assertIn("char1", altered_raw_data[1]["value"])
-        self.assertIn("stream1", altered_raw_data[1]["value"])
-        self.assertIn("struct1", altered_raw_data[1]["value"])
-        self.assertIn("list1", altered_raw_data[1]["value"])
-
-        self.assertIn("char1", altered_raw_data[3]["value"])
-        self.assertIn("char2", altered_raw_data[3]["value"])
 
         self.assertIn("char2", altered_raw_data[1]["value"]["struct1"])
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
@@ -163,25 +242,15 @@ class FieldStructStructChildBlockTest(TestCase):
         self.assertNotIn("char1", altered_raw_data[1]["value"]["struct1"])
         self.assertNotIn("char1", altered_raw_data[2]["value"]["struct1"])
 
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.struct1",
-            RemoveStructChildrenOperation(name="char1"),
-            streamfield=models.SampleModel.content,
-        )
-
-        self.assertEqual(len(altered_raw_data), 4)
-        # self.assertEqual(len(altered_raw_data[1]["value"]), 4)
-        # self.assertEqual(len(altered_raw_data[2]["value"]), 4)
-        self.assertEqual(len(altered_raw_data[3]["value"]), 2)
-
         self.assertIn("char2", altered_raw_data[1]["value"]["struct1"])
         self.assertIn("char2", altered_raw_data[2]["value"]["struct1"])
 
 
 class FieldStreamStreamChildBlockTest(TestCase):
-    """Changes to `nestedstream.stream1.char1`"""
+    """Tests involving changes to children of a StreamBlock nested inside a StreamBlock.
+
+    We use `nestedstream.stream1` blocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -203,6 +272,56 @@ class FieldStreamStreamChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedstream.stream1",
+            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+
+        self.assertEqual(altered_raw_data[1]["value"][0], self.raw_data[1]["value"][0])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["type"],
+            self.raw_data[1]["value"][1]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["type"],
+            self.raw_data[1]["value"][2]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["type"],
+            self.raw_data[2]["value"][0]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["id"],
+            self.raw_data[1]["value"][1]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["id"],
+            self.raw_data[1]["value"][2]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["id"],
+            self.raw_data[2]["value"][0]["id"],
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -223,27 +342,27 @@ class FieldStreamStreamChildBlockTest(TestCase):
         self.assertEqual(
             altered_raw_data[2]["value"][0]["value"][0]["type"], "renamed1"
         )
-
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][0]["id"],
+            self.raw_data[1]["value"][1]["value"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][2]["id"],
+            self.raw_data[1]["value"][1]["value"][2]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["value"][0]["id"],
+            self.raw_data[1]["value"][2]["value"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"][0]["id"],
+            self.raw_data[2]["value"][0]["value"][0]["id"],
         )
 
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedstream")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedstream")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestream")
-
-        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["value"][1]["type"], "stream1")
-        self.assertEqual(altered_raw_data[1]["value"][2]["type"], "stream1")
-        self.assertEqual(altered_raw_data[2]["value"][0]["type"], "stream1")
-        self.assertEqual(altered_raw_data[3]["value"][0]["type"], "char1")
-
-        self.assertEqual(altered_raw_data[1]["value"][1]["value"][1]["type"], "char2")
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][1],
+            self.raw_data[1]["value"][1]["value"][1],
+        )
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -257,24 +376,17 @@ class FieldStreamStreamChildBlockTest(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"][2]["value"]), 0)
         self.assertEqual(len(altered_raw_data[2]["value"][0]["value"]), 0)
 
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.stream1",
-            RemoveStreamChildrenOperation(name="char1"),
-            models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][0],
+            self.raw_data[1]["value"][1]["value"][1],
         )
-
-        self.assertEqual(len(altered_raw_data), 4)
-        self.assertEqual(len(altered_raw_data[1]["value"]), 3)
-        self.assertEqual(len(altered_raw_data[2]["value"]), 1)
-        self.assertEqual(len(altered_raw_data[3]["value"]), 1)
-
-        self.assertEqual(altered_raw_data[1]["value"][1]["value"][0]["type"], "char2")
 
 
 class FieldStreamStructChildBlockTest(TestCase):
-    "Changes to `nestedstream.simplestruct.char1`"
+    """Tests involving changes to children of a StructBlock nested inside a StreamBlock.
+
+    We use `nestedstream.simplestruct` blocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -291,6 +403,56 @@ class FieldStreamStructChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedstream.struct1",
+            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+
+        self.assertEqual(altered_raw_data[1]["value"][0], self.raw_data[1]["value"][0])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["type"],
+            self.raw_data[1]["value"][1]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["type"],
+            self.raw_data[1]["value"][2]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["type"],
+            self.raw_data[2]["value"][0]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["id"],
+            self.raw_data[1]["value"][1]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["id"],
+            self.raw_data[1]["value"][2]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["id"],
+            self.raw_data[2]["value"][0]["id"],
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -306,25 +468,35 @@ class FieldStreamStructChildBlockTest(TestCase):
         self.assertIn("renamed1", altered_raw_data[1]["value"][2]["value"])
         self.assertIn("renamed1", altered_raw_data[2]["value"][0]["value"])
 
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"]["renamed1"],
+            self.raw_data[1]["value"][1]["value"]["char1"],
         )
-
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedstream")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedstream")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestream")
-
-        self.assertEqual(altered_raw_data[1]["value"][0]["type"], "char1")
-        self.assertEqual(altered_raw_data[3]["value"][0]["type"], "char1")
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["value"]["renamed1"],
+            self.raw_data[1]["value"][2]["value"]["char1"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"]["renamed1"],
+            self.raw_data[2]["value"][0]["value"]["char1"],
+        )
 
         self.assertIn("char2", altered_raw_data[1]["value"][1]["value"])
         self.assertIn("char2", altered_raw_data[1]["value"][2]["value"])
         self.assertIn("char2", altered_raw_data[2]["value"][0]["value"])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"]["char2"],
+            self.raw_data[1]["value"][1]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["value"]["char2"],
+            self.raw_data[1]["value"][2]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"]["char2"],
+            self.raw_data[2]["value"][0]["value"]["char2"],
+        )
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -337,34 +509,30 @@ class FieldStreamStructChildBlockTest(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"][1]["value"]), 1)
         self.assertEqual(len(altered_raw_data[1]["value"][2]["value"]), 1)
         self.assertEqual(len(altered_raw_data[2]["value"][0]["value"]), 1)
-        self.assertNotIn("char1", altered_raw_data[1]["value"][1]["value"])
-        self.assertNotIn("char1", altered_raw_data[1]["value"][2]["value"])
-        self.assertNotIn("char1", altered_raw_data[2]["value"][0]["value"])
-
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.struct1",
-            RemoveStructChildrenOperation(name="char1"),
-            models.SampleModel.content,
-        )
-
-        self.assertEqual(len(altered_raw_data), 4)
-        self.assertEqual(len(altered_raw_data[1]["value"]), 3)
-        self.assertEqual(len(altered_raw_data[2]["value"]), 1)
-        self.assertEqual(len(altered_raw_data[3]["value"]), 1)
-
-        self.assertEqual(len(altered_raw_data[1]["value"][1]["value"]), 1)
-        self.assertEqual(len(altered_raw_data[1]["value"][2]["value"]), 1)
-        self.assertEqual(len(altered_raw_data[2]["value"][0]["value"]), 1)
 
         self.assertIn("char2", altered_raw_data[1]["value"][1]["value"])
         self.assertIn("char2", altered_raw_data[1]["value"][2]["value"])
         self.assertIn("char2", altered_raw_data[2]["value"][0]["value"])
 
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"]["char2"],
+            self.raw_data[1]["value"][1]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][2]["value"]["char2"],
+            self.raw_data[1]["value"][2]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"]["char2"],
+            self.raw_data[2]["value"][0]["value"]["char2"],
+        )
+
 
 class FieldListStreamChildBlockTest(TestCase):
-    "Changes to `nestedlist_stream.item.char1`"
+    """Tests involving changes to children of a StreamBlock nested inside a ListBlock.
+
+    We use `nestedlist_stream.item` blocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -384,6 +552,51 @@ class FieldListStreamChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedlist_stream.item",
+            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["type"],
+            self.raw_data[1]["value"][0]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["type"],
+            self.raw_data[1]["value"][1]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["type"],
+            self.raw_data[2]["value"][0]["type"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["id"], self.raw_data[1]["value"][0]["id"]
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["id"], self.raw_data[1]["value"][1]["id"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["id"], self.raw_data[2]["value"][0]["id"]
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -401,23 +614,48 @@ class FieldListStreamChildBlockTest(TestCase):
         self.assertEqual(
             altered_raw_data[1]["value"][1]["value"][0]["type"], "renamed1"
         )
-
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"][0]["type"], "renamed1"
         )
 
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedlist_stream")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedlist_stream")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestream")
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][0]["id"],
+            self.raw_data[1]["value"][0]["value"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][2]["id"],
+            self.raw_data[1]["value"][0]["value"][2]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][0]["id"],
+            self.raw_data[1]["value"][1]["value"][0]["id"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"][0]["id"],
+            self.raw_data[2]["value"][0]["value"][0]["id"],
+        )
 
-        self.assertEqual(altered_raw_data[1]["value"][0]["value"][1]["type"], "char2")
-        self.assertEqual(altered_raw_data[3]["value"][0]["type"], "char1")
-        self.assertEqual(altered_raw_data[3]["value"][1]["type"], "char2")
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][0]["value"],
+            self.raw_data[1]["value"][0]["value"][0]["value"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][2]["value"],
+            self.raw_data[1]["value"][0]["value"][2]["value"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"][0]["value"],
+            self.raw_data[1]["value"][1]["value"][0]["value"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"][0]["value"],
+            self.raw_data[2]["value"][0]["value"][0]["value"],
+        )
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][1],
+            self.raw_data[1]["value"][0]["value"][1],
+        )
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
@@ -431,24 +669,17 @@ class FieldListStreamChildBlockTest(TestCase):
         self.assertEqual(len(altered_raw_data[1]["value"][1]["value"]), 0)
         self.assertEqual(len(altered_raw_data[2]["value"][0]["value"]), 0)
 
-    def test_remove_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RemoveStreamChildrenOperation(name="char1"),
-            streamfield=models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"][0],
+            self.raw_data[1]["value"][0]["value"][1],
         )
-
-        self.assertEqual(len(altered_raw_data), 4)
-        self.assertEqual(len(altered_raw_data[1]["value"]), 2)
-        self.assertEqual(len(altered_raw_data[2]["value"]), 1)
-        self.assertEqual(len(altered_raw_data[3]["value"]), 2)
-
-        self.assertEqual(altered_raw_data[1]["value"][0]["value"][0]["type"], "char2")
 
 
 class FieldListStructChildBlockTest(TestCase):
-    """Changes to `nestedlist_struct.item.char1`"""
+    """Tests involving changes to children of a StructBlock nested inside a ListBlock.
+
+    We use `nestedlist_struct.item` blocks here.
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -461,6 +692,39 @@ class FieldListStructChildBlockTest(TestCase):
         ).content.raw_data
         cls.raw_data = raw_data
 
+    def test_blocks_and_data_not_operated_on_intact(self):
+        """Test whether other blocks and data not passed to an operation are intact.
+
+        We are checking whether the parts of the data which are not passed to an operation are
+        intact. Since the recursion process depends just on the block path and block structure,
+        this check is independent of the operation used. We will use a rename operation for now.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedlist_struct.item",
+            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
+
+        self.assertEqual(altered_raw_data[1]["type"], self.raw_data[1]["type"])
+        self.assertEqual(altered_raw_data[2]["type"], self.raw_data[2]["type"])
+        self.assertEqual(altered_raw_data[1]["id"], self.raw_data[1]["id"])
+        self.assertEqual(altered_raw_data[2]["id"], self.raw_data[2]["id"])
+
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["id"], self.raw_data[1]["value"][0]["id"]
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["id"], self.raw_data[1]["value"][1]["id"]
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["id"], self.raw_data[2]["value"][0]["id"]
+        )
+
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
@@ -472,27 +736,34 @@ class FieldListStructChildBlockTest(TestCase):
         self.assertNotIn("char1", altered_raw_data[1]["value"][0]["value"])
         self.assertNotIn("char1", altered_raw_data[1]["value"][1]["value"])
         self.assertNotIn("char1", altered_raw_data[2]["value"][0]["value"])
-
         self.assertIn("renamed1", altered_raw_data[1]["value"][0]["value"])
         self.assertIn("renamed1", altered_raw_data[1]["value"][1]["value"])
         self.assertIn("renamed1", altered_raw_data[2]["value"][0]["value"])
-
-    def test_rename_rest_intact(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_struct.item",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"]["renamed1"],
+            self.raw_data[1]["value"][0]["value"]["char1"],
         )
-
-        self.assertEqual(altered_raw_data[0]["type"], "char1")
-        self.assertEqual(altered_raw_data[1]["type"], "nestedlist_struct")
-        self.assertEqual(altered_raw_data[2]["type"], "nestedlist_struct")
-        self.assertEqual(altered_raw_data[3]["type"], "simplestruct")
-
-        self.assertIn("char1", altered_raw_data[3]["value"])
-        self.assertIn("char2", altered_raw_data[3]["value"])
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"]["renamed1"],
+            self.raw_data[1]["value"][1]["value"]["char1"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"]["renamed1"],
+            self.raw_data[2]["value"][0]["value"]["char1"],
+        )
 
         self.assertIn("char2", altered_raw_data[1]["value"][0]["value"])
         self.assertIn("char2", altered_raw_data[1]["value"][1]["value"])
         self.assertIn("char2", altered_raw_data[2]["value"][0]["value"])
+        self.assertEqual(
+            altered_raw_data[1]["value"][0]["value"]["char2"],
+            self.raw_data[1]["value"][0]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[1]["value"][1]["value"]["char2"],
+            self.raw_data[1]["value"][1]["value"]["char2"],
+        )
+        self.assertEqual(
+            altered_raw_data[2]["value"][0]["value"]["char2"],
+            self.raw_data[2]["value"][0]["value"]["char2"],
+        )
