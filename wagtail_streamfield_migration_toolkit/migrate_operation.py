@@ -70,12 +70,12 @@ class MigrateStreamData(RunPython):
         # Revision model. This relation is there on models with `RevisionMixin`.
         has_revisions = (
             hasattr(model, "latest_revision")
-            and model.latest_revision.field.remote_field.model == Revision
+            and model.latest_revision.field.remote_field.model is Revision
         )
         # Again, check for `live_revision`
         has_live_revisions = (
             hasattr(model, "live_revision")
-            and model.live_revision.field.remote_field.model == Revision
+            and model.live_revision.field.remote_field.model is Revision
         )
 
         model_queryset = model.objects.annotate(
