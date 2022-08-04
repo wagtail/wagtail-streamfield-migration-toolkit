@@ -13,7 +13,38 @@ from wagtail_streamfield_migration_toolkit.operations import (
 from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
 
 
-class TestNonPageModelWithoutRevisions(TestCase):
+class BaseMigrationTest(TestCase):
+    model_name = "SampleModel"
+
+    def apply_migration(self):
+        migration = Migration(
+            "test_migration", "wagtail_streamfield_migration_toolkit_test"
+        )
+        migration_operation = MigrateStreamData(
+            "wagtail_streamfield_migration_toolkit_test",
+            self.model_name,
+            "content",
+            [
+                (
+                    RenameStreamChildrenOperation(
+                        old_name="char1", new_name="renamed1"
+                    ),
+                    "",
+                )
+            ],
+        )
+        migration.operations = [migration_operation]
+
+        loader = MigrationLoader(connection=connection)
+        loader.build_graph()
+        project_state = loader.project_state()
+        schema_editor = connection.schema_editor(atomic=migration.atomic)
+        migration.apply(project_state, schema_editor)
+
+
+class TestNonPageModelWithoutRevisions(BaseMigrationTest):
+    model_name = "SampleModel"
+
     @classmethod
     def setUpTestData(cls):
         instances = [None for i in range(3)]
@@ -38,33 +69,8 @@ class TestNonPageModelWithoutRevisions(TestCase):
             instance.id: instance.content.raw_data for instance in instances
         }
 
-    class TestMigration(Migration):
-        migration_operation = MigrateStreamData(
-            "wagtail_streamfield_migration_toolkit_test",
-            "SampleModel",
-            "content",
-            [
-                (
-                    RenameStreamChildrenOperation(
-                        old_name="char1", new_name="renamed1"
-                    ),
-                    "",
-                )
-            ],
-        )
-        operations = [migration_operation]
-
     def test_migrate_stream_data(self):
-
-        migration = self.TestMigration(
-            "test_migration", "wagtail_streamfield_migration_toolkit_test"
-        )
-        loader = MigrationLoader(connection=connection)
-        loader.build_graph()
-        project_state = loader.project_state()
-
-        schema_editor = connection.schema_editor(atomic=migration.atomic)
-        migration.apply(project_state, schema_editor)
+        self.apply_migration()
 
         instances = models.SampleModel.objects.all().annotate(
             raw_content=Cast(F("content"), JSONField())
@@ -80,7 +86,8 @@ class TestNonPageModelWithoutRevisions(TestCase):
                     self.assertEqual(old_block["type"], new_block["type"])
 
 
-class TestPage(TestCase):
+class TestPage(BaseMigrationTest):
+    model_name = "SamplePage"
 
     @classmethod
     def setUpTestData(cls):
@@ -110,34 +117,8 @@ class TestPage(TestCase):
             instance.save_revision()
             cls.revisions[instance.id] = instance.revisions.all()
 
-
-    class TestMigration(Migration):
-        migration_operation = MigrateStreamData(
-            "wagtail_streamfield_migration_toolkit_test",
-            "SamplePage",
-            "content",
-            [
-                (
-                    RenameStreamChildrenOperation(
-                        old_name="char1", new_name="renamed1"
-                    ),
-                    "",
-                )
-            ],
-        )
-        operations = [migration_operation]
-
     def test_migrate_stream_data(self):
-
-        migration = self.TestMigration(
-            "test_migration", "wagtail_streamfield_migration_toolkit_test"
-        )
-        loader = MigrationLoader(connection=connection)
-        loader.build_graph()
-        project_state = loader.project_state()
-
-        schema_editor = connection.schema_editor(atomic=migration.atomic)
-        migration.apply(project_state, schema_editor)
+        self.apply_migration()
 
         instances = models.SamplePage.objects.all().annotate(
             raw_content=Cast(F("content"), JSONField())
@@ -153,15 +134,7 @@ class TestPage(TestCase):
                     self.assertEqual(old_block["type"], new_block["type"])
 
     def test_migrate_revisions(self):
-        migration = self.TestMigration(
-            "test_migration", "wagtail_streamfield_migration_toolkit_test"
-        )
-        loader = MigrationLoader(connection=connection)
-        loader.build_graph()
-        project_state = loader.project_state()
-
-        schema_editor = connection.schema_editor(atomic=migration.atomic)
-        migration.apply(project_state, schema_editor)
+        self.apply_migration()
 
         instances = models.SamplePage.objects.all().annotate(
             raw_content=Cast(F("content"), JSONField())
@@ -181,3 +154,4 @@ class TestPage(TestCase):
 
 
 # TODO for non page model with revisions
+# TODO check how this would work with wagtail 3.0
