@@ -41,7 +41,7 @@ setup(
     ],
     install_requires=[
         "Django>=3.2,<4.1",
-        "Wagtail @ git+https://github.com/wagtail/wagtail.git@main#egg=Wagtail",
+        "Wagtail>=4.0a0",
     ],
     extras_require={
         "testing": [
