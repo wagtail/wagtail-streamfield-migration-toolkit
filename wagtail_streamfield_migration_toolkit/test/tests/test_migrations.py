@@ -1,4 +1,5 @@
 import json
+import datetime
 from django.test import TestCase
 from django.db import connection
 from django.db.migrations.loader import MigrationLoader
@@ -16,7 +17,7 @@ from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStrea
 class BaseMigrationTest(TestCase):
     model_name = "SampleModel"
 
-    def apply_migration(self):
+    def apply_migration(self, revisions_from=None):
         migration = Migration(
             "test_migration", "wagtail_streamfield_migration_toolkit_test"
         )
@@ -32,6 +33,7 @@ class BaseMigrationTest(TestCase):
                     "",
                 )
             ],
+            revisions_from=revisions_from,
         )
         migration.operations = [migration_operation]
 
@@ -113,9 +115,15 @@ class TestPage(BaseMigrationTest):
         cls.revisions = {}
         for instance in instances:
             cls.instances[instance.id] = instance.content.raw_data
-            instance.save_revision()
-            instance.save_revision()
-            cls.revisions[instance.id] = instance.revisions.all()
+            for i in range(5):
+                revision = instance.save_revision()
+                revision.created_at = datetime.datetime.now() - datetime.timedelta(
+                    days=(5 - i)
+                )
+                if i == 1:
+                    instance.live_revision = revision
+                    instance.save()
+            cls.revisions[instance.id] = list(instance.revisions.all())
 
     def test_migrate_stream_data(self):
         self.apply_migration()
@@ -142,12 +150,79 @@ class TestPage(BaseMigrationTest):
 
         for instance in instances:
             prev_revisions = self.revisions[instance.id]
-            for old_revision, new_revision in zip(prev_revisions, instance.revisions.all()):
-                old_content = json.loads(old_revision.content['content'])
-                new_content = json.loads(old_revision.content['content'])
+            for old_revision, new_revision in zip(
+                prev_revisions, instance.revisions.all()
+            ):
+                old_content = json.loads(old_revision.content["content"])
+                new_content = json.loads(new_revision.content["content"])
                 for old_block, new_block in zip(old_content, new_content):
                     self.assertEqual(old_block["id"], new_block["id"])
                     if old_block["type"] == "char1":
+                        self.assertEqual(new_block["type"], "renamed1")
+                    else:
+                        self.assertEqual(old_block["type"], new_block["type"])
+
+    def test_always_migrate_live_and_latest_revisions(self):
+        revisions_from = datetime.datetime.now() + datetime.timedelta(days=2)
+        self.apply_migration(revisions_from=revisions_from)
+
+        instances = models.SamplePage.objects.all().annotate(
+            raw_content=Cast(F("content"), JSONField())
+        )
+
+        for instance in instances:
+            prev_revisions = self.revisions[instance.id]
+            for old_revision, new_revision in zip(
+                prev_revisions, instance.revisions.all()
+            ):
+                is_latest_or_live = (
+                    old_revision.id == instance.live_revision_id
+                    or old_revision.id == instance.latest_revision_id
+                )
+                old_content = json.loads(old_revision.content["content"])
+                new_content = json.loads(new_revision.content["content"])
+                for old_block, new_block in zip(old_content, new_content):
+                    self.assertEqual(old_block["id"], new_block["id"])
+                    if is_latest_or_live and old_block["type"] == "char1":
+                        self.assertEqual(new_block["type"], "renamed1")
+                    else:
+                        self.assertEqual(old_block["type"], new_block["type"])
+
+    def test_migrate_revisions_from_date(self):
+        revisions_from = datetime.datetime.now() - datetime.timedelta(days=2)
+        self.apply_migration(revisions_from=revisions_from)
+
+        instances = models.SamplePage.objects.all().annotate(
+            raw_content=Cast(F("content"), JSONField())
+        )
+
+        for instance in instances:
+            prev_revisions = self.revisions[instance.id]
+            for old_revision, new_revision in zip(
+                prev_revisions, instance.revisions.all()
+            ):
+                print(
+                    instance.id,
+                    "-",
+                    instance.live_revision_id,
+                    instance.latest_revision_id,
+                    old_revision.id,
+                    revisions_from,
+                    old_revision.created_at,
+                )
+                is_latest_or_live = (
+                    old_revision.id == instance.live_revision_id
+                    or old_revision.id == instance.latest_revision_id
+                )
+                is_after_revisions_from = (
+                    old_revision.created_at.timestamp() > revisions_from.timestamp()
+                )
+                is_altered = is_latest_or_live or is_after_revisions_from
+                old_content = json.loads(old_revision.content["content"])
+                new_content = json.loads(new_revision.content["content"])
+                for old_block, new_block in zip(old_content, new_content):
+                    self.assertEqual(old_block["id"], new_block["id"])
+                    if is_altered and old_block["type"] == "char1":
                         self.assertEqual(new_block["type"], "renamed1")
                     else:
                         self.assertEqual(old_block["type"], new_block["type"])
