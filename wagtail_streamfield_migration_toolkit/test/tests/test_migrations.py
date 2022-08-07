@@ -123,7 +123,7 @@ class TestPage(BaseMigrationTest):
                 if i == 1:
                     instance.live_revision = revision
                     instance.save()
-            cls.revisions[instance.id] = list(instance.revisions.all())
+            cls.revisions[instance.id] = list(instance.revisions.all().order_by('id'))
 
     def test_migrate_stream_data(self):
         self.apply_migration()
@@ -149,9 +149,9 @@ class TestPage(BaseMigrationTest):
         )
 
         for instance in instances:
-            prev_revisions = self.revisions[instance.id]
+            old_revisions = self.revisions[instance.id]
             for old_revision, new_revision in zip(
-                prev_revisions, instance.revisions.all()
+                old_revisions, instance.revisions.all().order_by('id')
             ):
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
@@ -171,9 +171,9 @@ class TestPage(BaseMigrationTest):
         )
 
         for instance in instances:
-            prev_revisions = self.revisions[instance.id]
+            old_revisions = self.revisions[instance.id]
             for old_revision, new_revision in zip(
-                prev_revisions, instance.revisions.all()
+                old_revisions, instance.revisions.all().order_by('id')
             ):
                 is_latest_or_live = (
                     old_revision.id == instance.live_revision_id
@@ -197,19 +197,10 @@ class TestPage(BaseMigrationTest):
         )
 
         for instance in instances:
-            prev_revisions = self.revisions[instance.id]
+            old_revisions = self.revisions[instance.id]
             for old_revision, new_revision in zip(
-                prev_revisions, instance.revisions.all()
+                old_revisions, instance.revisions.all().order_by('id')
             ):
-                print(
-                    instance.id,
-                    "-",
-                    instance.live_revision_id,
-                    instance.latest_revision_id,
-                    old_revision.id,
-                    revisions_from,
-                    old_revision.created_at,
-                )
                 is_latest_or_live = (
                     old_revision.id == instance.live_revision_id
                     or old_revision.id == instance.latest_revision_id
