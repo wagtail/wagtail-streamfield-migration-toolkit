@@ -1,5 +1,6 @@
 from django.db import models
-from wagtail.models import Page
+from django.contrib.contenttypes.fields import GenericRelation
+from wagtail.models import Page, RevisionMixin, DraftStateMixin
 from wagtail.fields import StreamField
 from wagtail.blocks import CharBlock, StreamBlock, StructBlock, ListBlock
 
@@ -46,3 +47,15 @@ class SampleModel(models.Model):
 
 class SamplePage(Page):
     content = StreamField(BaseStreamBlock(), use_json_field=True)
+
+
+class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
+    content = StreamField(BaseStreamBlock(), use_json_field=True)
+
+    _revisions = GenericRelation(
+        "wagtailcore.Revision", related_query_name="samplerevision"
+    )
+
+    @property
+    def revisions(self):
+        return self._revisions
