@@ -5,6 +5,7 @@ from wagtail_streamfield_migration_toolkit.utils import apply_changes_to_raw_dat
 from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
     RenameStructChildrenOperation,
+    ListChildrenToStructBlockOperation,
 )
 
 
@@ -41,7 +42,7 @@ class OldListFormatNestedStreamTestCase(TestCase):
         ]
         cls.raw_data = raw_data
 
-    def test_list_converted_to_new_format(self):
+    def test_list_converted_to_new_format_in_recursion(self):
         """Test whether all ListBlock children have converted formats during the recursion.
 
         This tests the changes done in the recursion process only, so the operation used isn't
@@ -97,6 +98,51 @@ class OldListFormatNestedStreamTestCase(TestCase):
             self.raw_data[1]["value"][0][1],
         )
 
+    def test_list_converted_to_new_format_in_operation(self):
+        """Test whether all ListBlock children have converted formats in an operation using the generator
+
+        We will test this with the ListChildrenToStructBlockOperation.
+
+        Check whether each ListBlock child has attributes id, value, type and type is item.
+        Check whether the ListBlock child value is a struct with the previous block as value.
+        Check whether the previous values are intact.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedlist_stream",
+            ListChildrenToStructBlockOperation(block_name="stream1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        for ind, listitem in enumerate(altered_raw_data[1]["value"]):
+            self.assertIsInstance(listitem, dict)
+            self.assertIn("type", listitem)
+            self.assertIn("value", listitem)
+            self.assertEqual(listitem["type"], "item")
+
+            self.assertIsInstance(listitem["value"], dict)
+            self.assertEqual(len(listitem["value"]), 1)
+            self.assertIn("stream1", listitem["value"])
+
+            self.assertEqual(
+                listitem["value"]["stream1"], self.raw_data[1]["value"][ind]
+            )
+
+        for ind, listitem in enumerate(altered_raw_data[2]["value"]):
+            self.assertIsInstance(listitem, dict)
+            self.assertIn("type", listitem)
+            self.assertIn("value", listitem)
+            self.assertEqual(listitem["type"], "item")
+
+            self.assertIsInstance(listitem["value"], dict)
+            self.assertEqual(len(listitem["value"]), 1)
+            self.assertIn("stream1", listitem["value"])
+
+            self.assertEqual(
+                listitem["value"]["stream1"], self.raw_data[2]["value"][ind]
+            )
+
 
 class OldListFormatNestedStructTestCase(TestCase):
     """Tests involving changes to ListBlocks in the old format with StructBlock children"""
@@ -123,7 +169,7 @@ class OldListFormatNestedStructTestCase(TestCase):
         ]
         cls.raw_data = raw_data
 
-    def test_list_converted_to_new_format(self):
+    def test_list_converted_to_new_format_in_recursion(self):
         """Test whether all ListBlock children have converted formats during the recursion.
 
         This tests the changes done in the recursion process only, so the operation used isn't
@@ -168,4 +214,49 @@ class OldListFormatNestedStructTestCase(TestCase):
             self.assertEqual(
                 altered_raw_data[ind0]["value"][ind1]["value"]["char2"],
                 self.raw_data[ind0]["value"][ind1]["char2"],
+            )
+
+    def test_list_converted_to_new_format_in_operation(self):
+        """Test whether all ListBlock children have converted formats in an operation using the generator
+
+        We will test this with the ListChildrenToStructBlockOperation.
+
+        Check whether each ListBlock child has attributes id, value, type and type is item.
+        Check whether the ListBlock child value is a struct with the previous block as value.
+        Check whether the previous values are intact.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            self.raw_data,
+            "nestedlist_struct",
+            ListChildrenToStructBlockOperation(block_name="struct1"),
+            streamfield=models.SampleModel.content,
+        )
+
+        for ind, listitem in enumerate(altered_raw_data[1]["value"]):
+            self.assertIsInstance(listitem, dict)
+            self.assertIn("type", listitem)
+            self.assertIn("value", listitem)
+            self.assertEqual(listitem["type"], "item")
+
+            self.assertIsInstance(listitem["value"], dict)
+            self.assertEqual(len(listitem["value"]), 1)
+            self.assertIn("struct1", listitem["value"])
+
+            self.assertEqual(
+                listitem["value"]["struct1"], self.raw_data[1]["value"][ind]
+            )
+
+        for ind, listitem in enumerate(altered_raw_data[2]["value"]):
+            self.assertIsInstance(listitem, dict)
+            self.assertIn("type", listitem)
+            self.assertIn("value", listitem)
+            self.assertEqual(listitem["type"], "item")
+
+            self.assertIsInstance(listitem["value"], dict)
+            self.assertEqual(len(listitem["value"]), 1)
+            self.assertIn("struct1", listitem["value"])
+
+            self.assertEqual(
+                listitem["value"]["struct1"], self.raw_data[2]["value"][ind]
             )
