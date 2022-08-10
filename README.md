@@ -8,21 +8,61 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 [![PyPI version](https://badge.fury.io/py/streamfield-migration-toolkit.svg)](https://badge.fury.io/py/streamfield-migration-toolkit)
 [![Wagtail Hallo CI](https://github.com/wagtail/streamfield-migration-toolkit/actions/workflows/test.yml/badge.svg)](https://github.com/wagtail/streamfield-migration-toolkit/actions/workflows/test.yml)
 
-## Links
+# Contents
 
-- [Documentation](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/README.md)
-- [Changelog](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/CHANGELOG.md)
-- [Contributing](https://github.com/wagtail/streamfield-migration-toolkit/blob/main/CHANGELOG.md)
-- [Discussions](https://github.com/wagtail/streamfield-migration-toolkit/discussions)
-- [Security](https://github.com/wagtail/streamfield-migration-toolkit/security)
+- [Introduction](#introduction)
+- [Quick Start](#quick-start)
+- [Reference](docs/REFERENCE.md)
+- [Usage](docs/USAGE.md)
+- [Contributing](docs/CONTRIBUTING.md)
 
-## Supported versions
+# Introduction
 
-- Python ...
-- Django ...
-- Wagtail ...
+This package aims to make it easier for developers using StreamField who need to write data 
+migrations when making changes involving blocks/block structure in the StreamField. We expose a 
+set of utilities for commonly made changes such as renaming or removing blocks, as well as utility
+functions for recursing through existing Streamfield data and applying changes, which makes it 
+easier to create custom logic for applying changes too.
+
+# Quick Start
 
 ## Installation
 
 - `pip install streamfield-migration-toolkit`
-- ...
+- Add `"wagtail_streamfield_migration_toolkit"` to `INSTALLED_APPS`
+
+## Supported versions
+
+- Python 3.7, 3.8, 3.9
+- Django 3.2, 4.0
+- Wagtail 4.0
+
+## Quick Usage
+
+If we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child block
+named `field1` which we want to rename to `block1`,
+
+```
+from django.db import migrations
+
+from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
+from wagtail_streamfield_migration_toolkit.operations import RenameStreamChildrenOperation
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ...
+    ]
+
+    operations = [
+        MigrateStreamData(
+            app_name="blog",
+            model_name="BlogPage",
+            field_name="content",
+            operations_and_block_paths=[
+                (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), ""),
+            ]
+        ),
+    ]
+
+```
