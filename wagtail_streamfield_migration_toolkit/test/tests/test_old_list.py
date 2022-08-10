@@ -9,10 +9,7 @@ from wagtail_streamfield_migration_toolkit.operations import (
 
 
 class OldListFormatNestedStreamTestCase(TestCase):
-    """TODO complete
-
-    recursion process
-    """
+    """Tests involving changes to ListBlocks in the old format with StreamBlock children"""
 
     @classmethod
     def setUpTestData(cls):
@@ -45,6 +42,15 @@ class OldListFormatNestedStreamTestCase(TestCase):
         cls.raw_data = raw_data
 
     def test_list_converted_to_new_format(self):
+        """Test whether all ListBlock children have converted formats during the recursion.
+
+        This tests the changes done in the recursion process only, so the operation used isn't
+        important. We will use a rename operation for now.
+
+        Check whether each ListBlock child has attributes id, value, type and type is item.
+        Check whether rename operation was done successfully.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "nestedlist_stream.item",
@@ -64,60 +70,27 @@ class OldListFormatNestedStreamTestCase(TestCase):
             self.assertIn("value", listitem)
             self.assertEqual(listitem["type"], "item")
 
-    def test_rename(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
+        altered_block_path_indices = [
+            (1, 0, 0),
+            (1, 0, 2),
+            (1, 1, 0),
+            (2, 0, 0),
+        ]
 
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][0]["type"], "renamed1"
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][2]["type"], "renamed1"
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][1]["value"][0]["type"], "renamed1"
-        )
-        self.assertEqual(
-            altered_raw_data[2]["value"][0]["value"][0]["type"], "renamed1"
-        )
+        for ind0, ind1, ind2 in altered_block_path_indices:
+            self.assertEqual(
+                altered_raw_data[ind0]["value"][ind1]["value"][ind2]["type"], "renamed1"
+            )
 
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][0]["id"],
-            self.raw_data[1]["value"][0][0]["id"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][2]["id"],
-            self.raw_data[1]["value"][0][2]["id"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][1]["value"][0]["id"],
-            self.raw_data[1]["value"][1][0]["id"],
-        )
-        self.assertEqual(
-            altered_raw_data[2]["value"][0]["value"][0]["id"],
-            self.raw_data[2]["value"][0][0]["id"],
-        )
+            self.assertEqual(
+                altered_raw_data[ind0]["value"][ind1]["value"][ind2]["id"],
+                self.raw_data[ind0]["value"][ind1][ind2]["id"],
+            )
 
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][0]["value"],
-            self.raw_data[1]["value"][0][0]["value"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"][2]["value"],
-            self.raw_data[1]["value"][0][2]["value"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][1]["value"][0]["value"],
-            self.raw_data[1]["value"][1][0]["value"],
-        )
-        self.assertEqual(
-            altered_raw_data[2]["value"][0]["value"][0]["value"],
-            self.raw_data[2]["value"][0][0]["value"],
-        )
+            self.assertEqual(
+                altered_raw_data[ind0]["value"][ind1]["value"][ind2]["value"],
+                self.raw_data[ind0]["value"][ind1][ind2]["value"],
+            )
 
         self.assertEqual(
             altered_raw_data[1]["value"][0]["value"][1],
@@ -126,10 +99,7 @@ class OldListFormatNestedStreamTestCase(TestCase):
 
 
 class OldListFormatNestedStructTestCase(TestCase):
-    """TODO complete
-
-    recursion process
-    """
+    """Tests involving changes to ListBlocks in the old format with StructBlock children"""
 
     @classmethod
     def setUpTestData(cls):
@@ -154,6 +124,15 @@ class OldListFormatNestedStructTestCase(TestCase):
         cls.raw_data = raw_data
 
     def test_list_converted_to_new_format(self):
+        """Test whether all ListBlock children have converted formats during the recursion.
+
+        This tests the changes done in the recursion process only, so the operation used isn't
+        important. We will use a rename operation for now.
+
+        Check whether each ListBlock child has attributes id, value, type and type is item.
+        Check whether rename operation was done successfully.
+        """
+
         altered_raw_data = apply_changes_to_raw_data(
             self.raw_data,
             "nestedlist_struct.item",
@@ -173,45 +152,20 @@ class OldListFormatNestedStructTestCase(TestCase):
             self.assertIn("value", listitem)
             self.assertEqual(listitem["type"], "item")
 
-    def test_rename(self):
-        altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_struct.item",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            streamfield=models.SampleModel.content,
-        )
+        altered_block_indices = [(1, 0), (1, 1), (2, 0)]
 
-        self.assertNotIn("char1", altered_raw_data[1]["value"][0]["value"])
-        self.assertNotIn("char1", altered_raw_data[1]["value"][1]["value"])
-        self.assertNotIn("char1", altered_raw_data[2]["value"][0]["value"])
-        self.assertIn("renamed1", altered_raw_data[1]["value"][0]["value"])
-        self.assertIn("renamed1", altered_raw_data[1]["value"][1]["value"])
-        self.assertIn("renamed1", altered_raw_data[2]["value"][0]["value"])
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"]["renamed1"],
-            self.raw_data[1]["value"][0]["char1"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][1]["value"]["renamed1"],
-            self.raw_data[1]["value"][1]["char1"],
-        )
-        self.assertEqual(
-            altered_raw_data[2]["value"][0]["value"]["renamed1"],
-            self.raw_data[2]["value"][0]["char1"],
-        )
+        for ind0, ind1 in altered_block_indices:
+            self.assertNotIn("char1", altered_raw_data[ind0]["value"][ind1]["value"])
+            self.assertIn("renamed1", altered_raw_data[ind0]["value"][ind1]["value"])
 
-        self.assertIn("char2", altered_raw_data[1]["value"][0]["value"])
-        self.assertIn("char2", altered_raw_data[1]["value"][1]["value"])
-        self.assertIn("char2", altered_raw_data[2]["value"][0]["value"])
-        self.assertEqual(
-            altered_raw_data[1]["value"][0]["value"]["char2"],
-            self.raw_data[1]["value"][0]["char2"],
-        )
-        self.assertEqual(
-            altered_raw_data[1]["value"][1]["value"]["char2"],
-            self.raw_data[1]["value"][1]["char2"],
-        )
-        self.assertEqual(
-            altered_raw_data[2]["value"][0]["value"]["char2"],
-            self.raw_data[2]["value"][0]["char2"],
-        )
+            self.assertEqual(
+                altered_raw_data[ind0]["value"][ind1]["value"]["renamed1"],
+                self.raw_data[ind0]["value"][ind1]["char1"],
+            )
+
+            self.assertIn("char2", altered_raw_data[ind0]["value"][ind1]["value"])
+
+            self.assertEqual(
+                altered_raw_data[ind0]["value"][ind1]["value"]["char2"],
+                self.raw_data[ind0]["value"][ind1]["char2"],
+            )
