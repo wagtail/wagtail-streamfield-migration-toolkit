@@ -1,7 +1,5 @@
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
-from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
-
 
 # TODO handle block_defs not existing? we'll do this later
 # TODO handle old list format
@@ -13,9 +11,7 @@ def should_alter_block(block_name, block_path):
     return block_name == block_path[0]
 
 
-def map_block_value(
-    block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
-):
+def map_block_value(block_value, block_def, block_path, operation, **kwargs):
     """
     Maps the value of a block.
 
