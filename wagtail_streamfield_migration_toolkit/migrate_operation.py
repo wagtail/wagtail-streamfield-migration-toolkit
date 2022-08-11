@@ -30,6 +30,8 @@ class MigrateStreamData(RunPython):
                 List of operations and corresponding block paths to apply.
             revisions_from (:obj:`datetime`, optional): Only revisions created from this date
                 onwards will be updated. Passing `None` updates all revisions. Defaults to `None`.
+                Note that live and latest revisions will be updated regardless of what value this
+                takes.
             chunk_size (:obj:`int`, optional): chunk size for queryset.iterator and bulk_update.
                 Defaults to 1024.
             **kwargs: atomic, elidable, hints for superclass RunPython can be given
