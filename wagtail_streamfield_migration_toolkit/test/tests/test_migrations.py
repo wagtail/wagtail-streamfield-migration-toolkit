@@ -219,7 +219,7 @@ class TestPage(BaseMigrationTest):
                         self.assertEqual(old_block["type"], new_block["type"])
 
 
-class TestNonePageModelWithRevisions(BaseMigrationTest):
+class TestNonPageModelWithRevisions(BaseMigrationTest):
     model_name = "SampleModelWithRevisions"
 
     @classmethod
