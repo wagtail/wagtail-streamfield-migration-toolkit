@@ -1,7 +1,5 @@
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
-from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
-
 
 # TODO handle block_defs not existing? we'll do this later
 # TODO handle old list format
@@ -13,9 +11,7 @@ def should_alter_block(block_name, block_path):
     return block_name == block_path[0]
 
 
-def map_block_value(
-    block_value, block_def, block_path, operation: BaseBlockOperation, **kwargs
-):
+def map_block_value(block_value, block_def, block_path, operation, **kwargs):
     """
     Maps the value of a block.
 
@@ -169,10 +165,8 @@ def map_list_block_value(list_block_value, block_def, block_path, **kwargs):
     """
 
     mapped_value = []
-    for child_block in list_block_value:
-
-        # TODO consider old format, later PR
-        # utility to generate  for new format
+    # In case data is in old list format
+    for child_block in formatted_list_child_generator(list_block_value):
 
         mapped_child_value = map_block_value(
             child_block["value"],
@@ -184,6 +178,20 @@ def map_list_block_value(list_block_value, block_def, block_path, **kwargs):
         mapped_value.append({**child_block, "value": mapped_child_value})
 
     return mapped_value
+
+
+def formatted_list_child_generator(list_block_value):
+    is_old_format = False
+    if not isinstance(list_block_value[0], dict):
+        is_old_format = True
+    elif "type" not in list_block_value[0] or list_block_value[0]["type"] != "item":
+        is_old_format = True
+
+    for child in list_block_value:
+        if not is_old_format:
+            yield child
+        else:
+            yield {"type": "item", "value": child}
 
 
 def apply_changes_to_raw_data(

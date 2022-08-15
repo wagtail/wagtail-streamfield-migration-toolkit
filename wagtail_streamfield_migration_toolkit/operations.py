@@ -1,3 +1,6 @@
+from wagtail_streamfield_migration_toolkit.utils import formatted_list_child_generator
+
+
 class BaseBlockOperation:
     def __init__(self):
         pass
@@ -259,7 +262,6 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
         return mapped_block_value
 
 
-# Note: to remember old list format
 class ListChildrenToStructBlockOperation(BaseBlockOperation):
     def __init__(self, block_name):
         super().__init__()
@@ -267,11 +269,11 @@ class ListChildrenToStructBlockOperation(BaseBlockOperation):
 
     def apply(self, block_value):
         mapped_block_value = []
-        for child_block in block_value:
+
+        # In case there is data from the old list format (wagtail < 2.16), we use the generator
+        # to convert them into the new list format
+        for child_block in formatted_list_child_generator(block_value):
             mapped_block_value.append(
                 {**child_block, "value": {self.block_name: child_block["value"]}}
             )
         return mapped_block_value
-
-
-# TODO BaseListBlockUpgradeOperation
