@@ -108,19 +108,10 @@ PASSWORD_HASHERS = ("django.contrib.auth.hashers.MD5PasswordHasher",)
 # https://docs.djangoproject.com/en/stable/ref/settings/#databases
 
 DATABASES = {
-    "default": dj_database_url.config(default="sqlite:///test_wagtail_streamfield_migration_toolkit.db"),
+    "default": dj_database_url.config(
+        default="sqlite:///test_wagtail_streamfield_migration_toolkit.db"
+    ),
 }
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "testproject",
-#         "USER": "testuser",
-#         "PASSWORD": "password",
-#         "HOST": "localhost",
-#         "PORT": "",
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/stable/ref/settings/#auth-password-validators
