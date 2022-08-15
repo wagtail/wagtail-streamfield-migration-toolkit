@@ -16,7 +16,7 @@ jobs:
       matrix:
         python: ['3.7', '3.8', '3.9']
         django: ['3.2', '4.0']
-        wagtail: ['main']
+        wagtail: ['4.0rc1']
         exclude:
           - python: '3.7'
             django: '4.0'
@@ -42,7 +42,7 @@ jobs:
       matrix:
         python: ['3.7', '3.8', '3.9']
         django: ['3.2', '4.0']
-        wagtail: ['main']
+        wagtail: ['4.0rc1']
         postgres: ['10.8']
         exclude:
           - python: '3.7'
