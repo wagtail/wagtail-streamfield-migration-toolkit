@@ -165,10 +165,8 @@ def map_list_block_value(list_block_value, block_def, block_path, **kwargs):
     """
 
     mapped_value = []
+    # In case data is in old list format
     for child_block in formatted_list_child_generator(list_block_value):
-
-        # TODO consider old format, later PR
-        # utility to generate  for new format
 
         mapped_child_value = map_block_value(
             child_block["value"],

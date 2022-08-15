@@ -71,6 +71,7 @@ class OldListFormatNestedStreamTestCase(TestCase):
             self.assertIn("value", listitem)
             self.assertEqual(listitem["type"], "item")
 
+        # the nested blocks which were renamed
         altered_block_path_indices = [
             (1, 0, 0),
             (1, 0, 2),
@@ -198,6 +199,7 @@ class OldListFormatNestedStructTestCase(TestCase):
             self.assertIn("value", listitem)
             self.assertEqual(listitem["type"], "item")
 
+        # The nested blocks which were renamed
         altered_block_indices = [(1, 0), (1, 1), (2, 0)]
 
         for ind0, ind1 in altered_block_indices:
