@@ -1,5 +1,6 @@
 import json
 import datetime
+from django.utils import timezone
 from django.test import TestCase
 from django.db import connection
 from django.db.migrations.loader import MigrationLoader
@@ -15,8 +16,8 @@ from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStrea
 
 
 class BaseMigrationTest(TestCase):
-    model = models.SampleModel
-    factory = factories.SampleModelFactory
+    model = None
+    factory = None
     has_revisions = False
 
     @classmethod
@@ -45,11 +46,11 @@ class BaseMigrationTest(TestCase):
             )
         )
 
-        cls.instances = {}
-        cls.revisions = {}
+        cls.original_raw_data = {}
+        cls.original_revisions = {}
 
         for instance in instances:
-            cls.instances[instance.id] = instance.content.raw_data
+            cls.original_raw_data[instance.id] = instance.content.raw_data
 
             if cls.has_revisions:
                 for i in range(5):
@@ -60,7 +61,7 @@ class BaseMigrationTest(TestCase):
                     if i == 1:
                         instance.live_revision = revision
                         instance.save()
-                cls.revisions[instance.id] = list(
+                cls.original_revisions[instance.id] = list(
                     instance.revisions.all().order_by("id")
                 )
 
@@ -98,7 +99,7 @@ class BaseMigrationTest(TestCase):
         )
 
         for instance in instances:
-            prev_content = self.instances[instance.id]
+            prev_content = self.original_raw_data[instance.id]
             for old_block, new_block in zip(prev_content, instance.raw_content):
                 self.assertEqual(old_block["id"], new_block["id"])
                 if old_block["type"] == "char1":
@@ -114,7 +115,7 @@ class BaseMigrationTest(TestCase):
         )
 
         for instance in instances:
-            old_revisions = self.revisions[instance.id]
+            old_revisions = self.original_revisions[instance.id]
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
@@ -128,7 +129,7 @@ class BaseMigrationTest(TestCase):
                         self.assertEqual(old_block["type"], new_block["type"])
 
     def _test_always_migrate_live_and_latest_revisions(self):
-        revisions_from = datetime.datetime.now() + datetime.timedelta(days=2)
+        revisions_from = timezone.now() + datetime.timedelta(days=2)
         self.apply_migration(revisions_from=revisions_from)
 
         instances = self.model.objects.all().annotate(
@@ -136,7 +137,7 @@ class BaseMigrationTest(TestCase):
         )
 
         for instance in instances:
-            old_revisions = self.revisions[instance.id]
+            old_revisions = self.original_revisions[instance.id]
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
@@ -154,7 +155,7 @@ class BaseMigrationTest(TestCase):
                         self.assertEqual(old_block["type"], new_block["type"])
 
     def _test_migrate_revisions_from_date(self):
-        revisions_from = datetime.datetime.now() - datetime.timedelta(days=2)
+        revisions_from = timezone.now() - datetime.timedelta(days=2)
         self.apply_migration(revisions_from=revisions_from)
 
         instances = self.model.objects.all().annotate(
@@ -162,7 +163,7 @@ class BaseMigrationTest(TestCase):
         )
 
         for instance in instances:
-            old_revisions = self.revisions[instance.id]
+            old_revisions = self.original_revisions[instance.id]
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
@@ -171,7 +172,7 @@ class BaseMigrationTest(TestCase):
                     or old_revision.id == instance.latest_revision_id
                 )
                 is_after_revisions_from = (
-                    old_revision.created_at.timestamp() > revisions_from.timestamp()
+                    old_revision.created_at > revisions_from
                 )
                 is_altered = is_latest_or_live or is_after_revisions_from
                 old_content = json.loads(old_revision.content["content"])

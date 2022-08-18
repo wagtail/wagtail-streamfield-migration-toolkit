@@ -46,7 +46,6 @@ setup(
     ],
     extras_require={
         "testing": [
-            "dj-database-url==0.5.0",
             "freezegun>=0.3.8",
             "wagtail-factories==3.1.0",
         ],
