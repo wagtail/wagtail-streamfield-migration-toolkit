@@ -70,10 +70,10 @@ class BaseMigrationTest(TestCase):
             "test_migration", "wagtail_streamfield_migration_toolkit_test"
         )
         migration_operation = MigrateStreamData(
-            "wagtail_streamfield_migration_toolkit_test",
-            self.model.__name__,
-            "content",
-            [
+            app_name="wagtail_streamfield_migration_toolkit_test",
+            model_name=self.model.__name__,
+            field_name="content",
+            operations_and_block_paths=[
                 (
                     RenameStreamChildrenOperation(
                         old_name="char1", new_name="renamed1"

@@ -46,9 +46,9 @@ class FieldStructStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.stream1",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -88,9 +88,9 @@ class FieldStructStreamChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.stream1",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -130,9 +130,9 @@ class FieldStructStreamChildBlockTest(TestCase):
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.stream1",
-            RemoveStreamChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.stream1",
+            operation=RemoveStreamChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -172,9 +172,9 @@ class FieldStructStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.struct1",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -214,9 +214,9 @@ class FieldStructStructChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.struct1",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -230,9 +230,9 @@ class FieldStructStructChildBlockTest(TestCase):
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstruct.struct1",
-            RemoveStructChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedstruct.struct1",
+            operation=RemoveStructChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -281,10 +281,10 @@ class FieldStreamStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.stream1",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertEqual(altered_raw_data[0], self.raw_data[0])
@@ -324,10 +324,10 @@ class FieldStreamStreamChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.stream1",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.stream1",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertEqual(
@@ -366,10 +366,10 @@ class FieldStreamStreamChildBlockTest(TestCase):
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.stream1",
-            RemoveStreamChildrenOperation(name="char1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.stream1",
+            operation=RemoveStreamChildrenOperation(name="char1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"][1]["value"]), 1)
@@ -412,10 +412,10 @@ class FieldStreamStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.struct1",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertEqual(altered_raw_data[0], self.raw_data[0])
@@ -455,10 +455,10 @@ class FieldStreamStructChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.struct1",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.struct1",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertNotIn("char1", altered_raw_data[1]["value"][1]["value"])
@@ -500,10 +500,10 @@ class FieldStreamStructChildBlockTest(TestCase):
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedstream.struct1",
-            RemoveStructChildrenOperation(name="char1"),
-            models.SampleModel.content,
+            raw_data=self.raw_data,
+            block_path_str="nestedstream.struct1",
+            operation=RemoveStructChildrenOperation(name="char1"),
+            streamfield=models.SampleModel.content,
         )
 
         self.assertEqual(len(altered_raw_data[1]["value"][1]["value"]), 1)
@@ -561,9 +561,9 @@ class FieldListStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedlist_stream.item",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -599,9 +599,9 @@ class FieldListStreamChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedlist_stream.item",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -659,9 +659,9 @@ class FieldListStreamChildBlockTest(TestCase):
 
     def test_remove(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_stream.item",
-            RemoveStreamChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedlist_stream.item",
+            operation=RemoveStreamChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -701,9 +701,9 @@ class FieldListStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_struct.item",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedlist_struct.item",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -727,9 +727,9 @@ class FieldListStructChildBlockTest(TestCase):
 
     def test_rename(self):
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "nestedlist_struct.item",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="nestedlist_struct.item",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
