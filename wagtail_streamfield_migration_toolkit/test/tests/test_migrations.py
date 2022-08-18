@@ -92,6 +92,13 @@ class BaseMigrationTest(TestCase):
         migration.apply(project_state, schema_editor)
 
     def _test_migrate_stream_data(self):
+        """Test whether the stream data of the model instances have been updated properly
+
+        Apply the migration and then query the raw data of the updated instances. Compare with
+        original raw data and check whether all relevant `char1` blocks have been renamed and
+        whether ids and other block types are intact.
+        """
+
         self.apply_migration()
 
         instances = self.model.objects.all().annotate(
@@ -108,6 +115,11 @@ class BaseMigrationTest(TestCase):
                     self.assertEqual(old_block["type"], new_block["type"])
 
     def _test_migrate_revisions(self):
+        """Test whether all revisions have been updated properly
+
+        Applying migration with `revisions_from=None`, so all revisions should be updated.
+        """
+
         self.apply_migration()
 
         instances = self.model.objects.all().annotate(
@@ -129,6 +141,13 @@ class BaseMigrationTest(TestCase):
                         self.assertEqual(old_block["type"], new_block["type"])
 
     def _test_always_migrate_live_and_latest_revisions(self):
+        """Test whether latest and live revisions are always updated
+
+        Applying migration with `revisions_from` set to a date in the future, so there should be
+        no revisions which are made after the date. Only the live and latest revisions should
+        update in this case.
+        """
+
         revisions_from = timezone.now() + datetime.timedelta(days=2)
         self.apply_migration(revisions_from=revisions_from)
 
@@ -155,6 +174,13 @@ class BaseMigrationTest(TestCase):
                         self.assertEqual(old_block["type"], new_block["type"])
 
     def _test_migrate_revisions_from_date(self):
+        """Test whether revisions from a given date onwards are updated
+
+        Applying migration with `revisions_from` set to a date between the created date of the first
+        and last revision, so only the revisions after the date and the live and latest revision
+        should be updated.
+        """
+
         revisions_from = timezone.now() - datetime.timedelta(days=2)
         self.apply_migration(revisions_from=revisions_from)
 
@@ -171,9 +197,7 @@ class BaseMigrationTest(TestCase):
                     old_revision.id == instance.live_revision_id
                     or old_revision.id == instance.latest_revision_id
                 )
-                is_after_revisions_from = (
-                    old_revision.created_at > revisions_from
-                )
+                is_after_revisions_from = old_revision.created_at > revisions_from
                 is_altered = is_latest_or_live or is_after_revisions_from
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
