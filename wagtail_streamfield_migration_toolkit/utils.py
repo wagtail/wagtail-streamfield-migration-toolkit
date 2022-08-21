@@ -5,6 +5,10 @@ from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 # TODO handle old list format
 
 
+class InvalidBlockDefError(Exception):
+    pass
+
+
 def should_alter_block(block_name, block_path):
     # If the block is not at the start of `block_path`, then neither it nor its children are
     # blocks that we need to alter.
@@ -97,7 +101,13 @@ def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
             mapped_value.append(child_block)
 
         else:
-            child_block_def = block_def.child_blocks[child_block["type"]]
+            try:
+                child_block_def = block_def.child_blocks[child_block["type"]]
+            except KeyError:
+                # TODO complete for all 3 funcs, figure out message
+                raise InvalidBlockDefError(
+                    "No current block def named {}".format(child_block["type"])
+                )
             mapped_child_value = map_block_value(
                 child_block["value"],
                 block_def=child_block_def,
@@ -134,7 +144,13 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
             mapped_value[key] = child_value
 
         else:
-            child_block_def = block_def.child_blocks[key]
+            try:
+                child_block_def = block_def.child_blocks[key]
+            except KeyError:
+                # TODO complete for all 3 funcs, figure out message
+                raise InvalidBlockDefError(
+                    "No current block def named {}".format(key)
+                )
             altered_child_value = map_block_value(
                 child_value,
                 block_def=child_block_def,
