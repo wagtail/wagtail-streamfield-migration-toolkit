@@ -1,6 +1,6 @@
 import json
 import logging
-from django.db.models import JSONField, F, Q
+from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
@@ -76,10 +76,11 @@ class MigrateStreamData(RunPython):
         # from wagtail 4 onwards, the PageRevision model has been replaced with the Revision model.
         if utils.__wagtailversion3__:
             # only pages have revisions
-            if isinstance(model, apps.get_model("wagtailcore", "Page")):
+            if apps.get_model("wagtailcore", "Page") in model.__bases__:
                 has_revisions = True
                 has_live_revisions = True
                 RevisionModel = apps.get_model("wagtailcore", "PageRevision")
+                page_ids = []
 
         else:
             RevisionModel = apps.get_model("wagtailcore", "Revision")
@@ -113,6 +114,8 @@ class MigrateStreamData(RunPython):
 
             if has_live_revisions:
                 live_and_latest_revision_ids.add(instance.live_revision_id)
+                if utils.__wagtailversion3__:
+                    page_ids.append(instance.id)
 
             raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
@@ -150,18 +153,50 @@ class MigrateStreamData(RunPython):
         if not has_revisions:
             return
 
-        # TODO support for wagtail 3 ?
         ContentType = apps.get_model("contenttypes", "ContentType")
         contenttype_id = ContentType.objects.get_for_model(model).id
 
+        revision_query = None
         if self.revisions_from is not None:
-            revision_query = Q(
-                created_at__gte=self.revisions_from,
-                content_type_id=contenttype_id,
-            ) | Q(id__in=live_and_latest_revision_ids)
-            # we always update latest and live revision if available
+            # query for wagtail 3
+            if utils.__wagtailversion3__:
+                # All revisions created after the given date.
+                revision_query = Q(
+                    created_at__gte=self.revisions_from,
+                    page_id__in=page_ids,
+                )
+                # All live revisions. In the this case, we only have live revision ids in the set
+                # though it is named as such. (wagtail 3 doesn't have the latest_revision_id field)
+                revision_query = revision_query | Q(id__in=live_and_latest_revision_ids)
+                # All latest revisions. For each revision, we check if it is the revision with the
+                # last `created_at` from all revisions with its `page_id`.
+                revision_query = revision_query | Q(
+                    id__in=Subquery(
+                        RevisionModel.objects.filter(page_id=OuterRef("page_id"))
+                        .order_by("-created_at", "-id")
+                        .values_list("id", flat=True)[:1]
+                    ),
+                    page_id__in=page_ids,
+                )
+
+            # query for wagtail 4 onwards
+            else:
+                # All revisions created after the given date.
+                revision_query = Q(
+                    created_at__gte=self.revisions_from,
+                    content_type_id=contenttype_id,
+                )
+                # All live and latest revisions
+                revision_query = revision_query | Q(id__in=live_and_latest_revision_ids)
+
         else:
-            revision_query = Q(content_type_id=contenttype_id)
+            # query for wagtail 3
+            if utils.__wagtailversion3__:
+                revision_query = Q(page_id__in=page_ids)
+
+            # query for wagtail 4 onwards
+            else:
+                revision_query = Q(content_type_id=contenttype_id)
 
         revision_queryset = RevisionModel.objects.filter(revision_query)
 

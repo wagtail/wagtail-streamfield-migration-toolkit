@@ -146,9 +146,8 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
-                is_latest_or_live = (
-                    old_revision.id == instance.live_revision_id
-                    or old_revision.id == instance.latest_revision_id
+                is_latest_or_live = old_revision.id == instance.live_revision_id or (
+                    old_revision.id == instance.latest_revision_id
                     if not __wagtailversion3__
                     else old_revision.id == instance.get_latest_revision().id
                 )
@@ -180,9 +179,8 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
-                is_latest_or_live = (
-                    old_revision.id == instance.live_revision_id
-                    or old_revision.id == instance.latest_revision_id
+                is_latest_or_live = old_revision.id == instance.live_revision_id or (
+                    old_revision.id == instance.latest_revision_id
                     if not __wagtailversion3__
                     else old_revision.id == instance.get_latest_revision().id
                 )
