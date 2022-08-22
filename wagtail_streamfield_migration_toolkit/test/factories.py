@@ -70,8 +70,9 @@ class SamplePageFactory(wagtail_factories.PageFactory):
         model = models.SamplePage
 
 
-class SampleModelWithRevisionsFactory(DjangoModelFactory):
-    content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
+if not models.__wagtailversion3__:
+    class SampleModelWithRevisionsFactory(DjangoModelFactory):
+        content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
 
-    class Meta:
-        model = models.SampleModelWithRevisions
+        class Meta:
+            model = models.SampleModelWithRevisions

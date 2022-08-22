@@ -1,7 +1,13 @@
 from django.db import models
-from wagtail.models import Page, RevisionMixin, DraftStateMixin
 from wagtail.fields import StreamField
 from wagtail.blocks import CharBlock, StreamBlock, StructBlock, ListBlock
+
+from wagtail_streamfield_migration_toolkit.utils import __wagtailversion3__
+
+if __wagtailversion3__:
+    from wagtail.models import Page
+else:
+    from wagtail.models import Page, RevisionMixin, DraftStateMixin
 
 
 class SimpleStructBlock(StructBlock):
@@ -48,5 +54,7 @@ class SamplePage(Page):
     content = StreamField(BaseStreamBlock(), use_json_field=True)
 
 
-class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
-    content = StreamField(BaseStreamBlock(), use_json_field=True)
+if not __wagtailversion3__:
+
+    class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
+        content = StreamField(BaseStreamBlock(), use_json_field=True)

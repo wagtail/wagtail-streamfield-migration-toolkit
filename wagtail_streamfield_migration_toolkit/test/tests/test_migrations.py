@@ -11,6 +11,7 @@ from ..testutils import MigrationTestMixin
 from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
 )
+from wagtail_streamfield_migration_toolkit.utils import __wagtailversion3__
 
 
 # TODO test multiple operations in one go
@@ -148,6 +149,8 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
                 is_latest_or_live = (
                     old_revision.id == instance.live_revision_id
                     or old_revision.id == instance.latest_revision_id
+                    if not __wagtailversion3__
+                    else old_revision.id == instance.get_latest_revision().id
                 )
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
@@ -180,6 +183,8 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
                 is_latest_or_live = (
                     old_revision.id == instance.live_revision_id
                     or old_revision.id == instance.latest_revision_id
+                    if not __wagtailversion3__
+                    else old_revision.id == instance.get_latest_revision().id
                 )
                 is_after_revisions_from = old_revision.created_at > revisions_from
                 is_altered = is_latest_or_live or is_after_revisions_from
@@ -219,22 +224,24 @@ class TestPage(BaseMigrationTest):
         self._test_migrate_revisions_from_date()
 
 
-class TestNonPageModelWithRevisions(BaseMigrationTest):
-    model = models.SampleModelWithRevisions
-    factory = factories.SampleModelWithRevisionsFactory
-    has_revisions = True
+if not models.__wagtailversion3__:
 
-    def test_migrate_stream_data(self):
-        self._test_migrate_stream_data()
+    class TestNonPageModelWithRevisions(BaseMigrationTest):
+        model = models.SampleModelWithRevisions
+        factory = factories.SampleModelWithRevisionsFactory
+        has_revisions = True
 
-    def test_migrate_revisions(self):
-        self._test_migrate_revisions()
+        def test_migrate_stream_data(self):
+            self._test_migrate_stream_data()
 
-    def test_always_migrate_live_and_latest_revisions(self):
-        self._test_always_migrate_live_and_latest_revisions()
+        def test_migrate_revisions(self):
+            self._test_migrate_revisions()
 
-    def test_migrate_revisions_from_date(self):
-        self._test_migrate_revisions_from_date()
+        def test_always_migrate_live_and_latest_revisions(self):
+            self._test_always_migrate_live_and_latest_revisions()
+
+        def test_migrate_revisions_from_date(self):
+            self._test_migrate_revisions_from_date()
 
 
 # TODO check how this would work with wagtail 3.0

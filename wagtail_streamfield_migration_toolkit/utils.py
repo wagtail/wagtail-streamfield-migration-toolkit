@@ -1,4 +1,8 @@
+from packaging import version
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
+from wagtail import __version__ as __wagtailversion__
+
+__wagtailversion3__ = version.parse(__wagtailversion__) < version.parse("4.0rc1")
 
 
 class InvalidBlockDefError(Exception):

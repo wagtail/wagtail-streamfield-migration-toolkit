@@ -70,34 +70,49 @@ class MigrateStreamData(RunPython):
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
 
-        Revision = apps.get_model("wagtailcore", "Revision")
-        # We check if the models have a field `latest_revision` and make sure it points to the
-        # Revision model. This relation is there on models with `RevisionMixin`.
-        has_revisions = (
-            hasattr(model, "latest_revision")
-            and model.latest_revision.field.remote_field.model is Revision
-        )
-        # Again, check for `live_revision`
-        has_live_revisions = (
-            hasattr(model, "live_revision")
-            and model.live_revision.field.remote_field.model is Revision
-        )
+        has_revisions = False
+        has_live_revisions = False
+        has_latest_revisions = False
+        # from wagtail 4 onwards, the PageRevision model has been replaced with the Revision model.
+        if utils.__wagtailversion3__:
+            # only pages have revisions
+            if isinstance(model, apps.get_model("wagtailcore", "Page")):
+                has_revisions = True
+                has_live_revisions = True
+                RevisionModel = apps.get_model("wagtailcore", "PageRevision")
+
+        else:
+            RevisionModel = apps.get_model("wagtailcore", "Revision")
+
+            # We check if the models have a field `latest_revision` and make sure it points to the
+            # Revision model. This relation is there on models with `RevisionMixin`.
+            has_latest_revisions = (
+                hasattr(model, "latest_revision")
+                and model.latest_revision.field.remote_field.model is RevisionModel
+            )
+            # Again, check for `live_revision`
+            has_live_revisions = (
+                hasattr(model, "live_revision")
+                and model.live_revision.field.remote_field.model is RevisionModel
+            )
+            has_revisions = has_latest_revisions or has_live_revisions
+        if has_revisions:
+            # use a set here since latest_revisions and live_revisions can overlap often
+            live_and_latest_revision_ids = set()
 
         model_queryset = model.objects.annotate(
             raw_content=Cast(F(self.field_name), JSONField())
         ).all()
 
         updated_model_instances_buffer = []
-        if has_revisions:
-            # use a set here since latest_revisions and live_revisions can overlap often
-            live_and_latest_revision_ids = set()
         for instance in model_queryset.iterator(chunk_size=self.chunk_size):
 
             # get these revision ids for filtering revisions later
-            if has_revisions:
+            if not utils.__wagtailversion3__ and has_latest_revisions:
                 live_and_latest_revision_ids.add(instance.latest_revision_id)
-                if has_live_revisions:
-                    live_and_latest_revision_ids.add(instance.live_revision_id)
+
+            if has_live_revisions:
+                live_and_latest_revision_ids.add(instance.live_revision_id)
 
             raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
@@ -147,7 +162,8 @@ class MigrateStreamData(RunPython):
             # we always update latest and live revision if available
         else:
             revision_query = Q(content_type_id=contenttype_id)
-        revision_queryset = Revision.objects.filter(revision_query)
+
+        revision_queryset = RevisionModel.objects.filter(revision_query)
 
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
@@ -181,8 +197,8 @@ class MigrateStreamData(RunPython):
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:
-                Revision.objects.bulk_update(updated_revisions_buffer, ["content"])
+                RevisionModel.objects.bulk_update(updated_revisions_buffer, ["content"])
                 updated_revisions_buffer = []
 
         if len(updated_revisions_buffer) > 0:
-            Revision.objects.bulk_update(updated_revisions_buffer, ["content"])
+            RevisionModel.objects.bulk_update(updated_revisions_buffer, ["content"])
