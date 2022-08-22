@@ -5,13 +5,13 @@ from django.test import TestCase
 
 from django.db.models import JSONField, F
 from django.db.models.functions import Cast
+from wagtail import VERSION as WAGTAIL_VERSION
 
 from .. import factories, models
 from ..testutils import MigrationTestMixin
 from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
 )
-from wagtail_streamfield_migration_toolkit.utils import __wagtailversion3__
 
 
 # TODO test multiple operations in one go
@@ -148,7 +148,7 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             ):
                 is_latest_or_live = old_revision.id == instance.live_revision_id or (
                     old_revision.id == instance.latest_revision_id
-                    if not __wagtailversion3__
+                    if WAGTAIL_VERSION >= (4, 0, 0)
                     else old_revision.id == instance.get_latest_revision().id
                 )
                 old_content = json.loads(old_revision.content["content"])
@@ -181,7 +181,7 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             ):
                 is_latest_or_live = old_revision.id == instance.live_revision_id or (
                     old_revision.id == instance.latest_revision_id
-                    if not __wagtailversion3__
+                    if WAGTAIL_VERSION >= (4, 0, 0)
                     else old_revision.id == instance.get_latest_revision().id
                 )
                 is_after_revisions_from = old_revision.created_at > revisions_from
@@ -222,7 +222,7 @@ class TestPage(BaseMigrationTest):
         self._test_migrate_revisions_from_date()
 
 
-if not models.__wagtailversion3__:
+if WAGTAIL_VERSION >= (4, 0, 0):
 
     class TestNonPageModelWithRevisions(BaseMigrationTest):
         model = models.SampleModelWithRevisions
@@ -240,6 +240,3 @@ if not models.__wagtailversion3__:
 
         def test_migrate_revisions_from_date(self):
             self._test_migrate_revisions_from_date()
-
-
-# TODO check how this would work with wagtail 3.0

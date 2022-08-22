@@ -4,6 +4,7 @@ from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
+from wagtail import VERSION as WAGTAIL_VERSION
 
 from wagtail_streamfield_migration_toolkit import utils
 
@@ -74,8 +75,9 @@ class MigrateStreamData(RunPython):
         has_live_revisions = False
         has_latest_revisions = False
         # from wagtail 4 onwards, the PageRevision model has been replaced with the Revision model.
-        if utils.__wagtailversion3__:
+        if WAGTAIL_VERSION < (4, 0, 0):
             # only pages have revisions
+            # TODO use issubclass
             if apps.get_model("wagtailcore", "Page") in model.__bases__:
                 has_revisions = True
                 has_live_revisions = True
@@ -109,12 +111,12 @@ class MigrateStreamData(RunPython):
         for instance in model_queryset.iterator(chunk_size=self.chunk_size):
 
             # get these revision ids for filtering revisions later
-            if not utils.__wagtailversion3__ and has_latest_revisions:
+            if WAGTAIL_VERSION >= (4, 0, 0) and has_latest_revisions:
                 live_and_latest_revision_ids.add(instance.latest_revision_id)
 
             if has_live_revisions:
                 live_and_latest_revision_ids.add(instance.live_revision_id)
-                if utils.__wagtailversion3__:
+                if WAGTAIL_VERSION < (4, 0, 0):
                     page_ids.append(instance.id)
 
             raw_data = instance.raw_content
@@ -159,7 +161,7 @@ class MigrateStreamData(RunPython):
         revision_query = None
         if self.revisions_from is not None:
             # query for wagtail 3
-            if utils.__wagtailversion3__:
+            if WAGTAIL_VERSION < (4, 0, 0):
                 # All revisions created after the given date.
                 revision_query = Q(
                     created_at__gte=self.revisions_from,
@@ -191,7 +193,7 @@ class MigrateStreamData(RunPython):
 
         else:
             # query for wagtail 3
-            if utils.__wagtailversion3__:
+            if WAGTAIL_VERSION < (4, 0, 0):
                 revision_query = Q(page_id__in=page_ids)
 
             # query for wagtail 4 onwards

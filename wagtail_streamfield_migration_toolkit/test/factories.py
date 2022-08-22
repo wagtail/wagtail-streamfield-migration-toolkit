@@ -1,6 +1,7 @@
 import factory
 from factory.django import DjangoModelFactory
 import wagtail_factories
+from wagtail import VERSION as WAGTAIL_VERSION
 
 from . import models
 
@@ -70,7 +71,7 @@ class SamplePageFactory(wagtail_factories.PageFactory):
         model = models.SamplePage
 
 
-if not models.__wagtailversion3__:
+if WAGTAIL_VERSION >= (4, 0, 0):
     class SampleModelWithRevisionsFactory(DjangoModelFactory):
         content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
 

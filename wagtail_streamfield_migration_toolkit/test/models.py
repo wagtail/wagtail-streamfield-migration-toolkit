@@ -1,10 +1,9 @@
 from django.db import models
 from wagtail.fields import StreamField
 from wagtail.blocks import CharBlock, StreamBlock, StructBlock, ListBlock
+from wagtail import VERSION as WAGTAIL_VERSION
 
-from wagtail_streamfield_migration_toolkit.utils import __wagtailversion3__
-
-if __wagtailversion3__:
+if WAGTAIL_VERSION < (4, 0, 0):
     from wagtail.models import Page
 else:
     from wagtail.models import Page, RevisionMixin, DraftStateMixin
@@ -54,7 +53,7 @@ class SamplePage(Page):
     content = StreamField(BaseStreamBlock(), use_json_field=True)
 
 
-if not __wagtailversion3__:
+if WAGTAIL_VERSION >= (4, 0, 0):
 
     class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
         content = StreamField(BaseStreamBlock(), use_json_field=True)

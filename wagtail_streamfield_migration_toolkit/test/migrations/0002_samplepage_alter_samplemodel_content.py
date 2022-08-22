@@ -4,14 +4,14 @@ from django.db import migrations, models
 import django.db.models.deletion
 import wagtail.blocks
 import wagtail.fields
-from ..models import __wagtailversion3__
+from wagtail import VERSION as WAGTAIL_VERSION
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
         ('wagtailcore', '0069_log_entry_jsonfield')
-        if __wagtailversion3__
+        if WAGTAIL_VERSION < (4, 0, 0)
         else ('wagtailcore', '0076_modellogentry_revision'),
         ('wagtail_streamfield_migration_toolkit_test', '0001_initial'),
     ]
