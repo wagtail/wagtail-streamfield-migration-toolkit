@@ -42,7 +42,7 @@ setup(
     ],
     install_requires=[
         "Django>=3.2,<4.1",
-        "Wagtail>=4.0rc1",
+        "Wagtail>=3.0,<4.1",
     ],
     extras_require={
         "testing": [
