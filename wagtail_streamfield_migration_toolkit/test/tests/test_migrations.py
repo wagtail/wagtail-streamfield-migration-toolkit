@@ -58,6 +58,7 @@ class BaseMigrationTest(TestCase):
                     revision.created_at = datetime.datetime.now() - datetime.timedelta(
                         days=(5 - i)
                     )
+                    revision.save()
                     if i == 1:
                         instance.live_revision = revision
                         instance.save()
