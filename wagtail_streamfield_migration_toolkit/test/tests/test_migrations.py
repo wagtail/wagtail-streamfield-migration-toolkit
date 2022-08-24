@@ -92,6 +92,14 @@ class BaseMigrationTest(TestCase):
         schema_editor = connection.schema_editor(atomic=migration.atomic)
         migration.apply(project_state, schema_editor)
 
+    def assertBlocksRenamed(self, old_content, new_content, is_altered=True):
+        for old_block, new_block in zip(old_content, new_content):
+            self.assertEqual(old_block["id"], new_block["id"])
+            if is_altered and old_block["type"] == "char1":
+                self.assertEqual(new_block["type"], "renamed1")
+            else:
+                self.assertEqual(old_block["type"], new_block["type"])
+
     def _test_migrate_stream_data(self):
         """Test whether the stream data of the model instances have been updated properly
 
@@ -108,12 +116,9 @@ class BaseMigrationTest(TestCase):
 
         for instance in instances:
             prev_content = self.original_raw_data[instance.id]
-            for old_block, new_block in zip(prev_content, instance.raw_content):
-                self.assertEqual(old_block["id"], new_block["id"])
-                if old_block["type"] == "char1":
-                    self.assertEqual(new_block["type"], "renamed1")
-                else:
-                    self.assertEqual(old_block["type"], new_block["type"])
+            self.assertBlocksRenamed(
+                old_content=prev_content, new_content=instance.raw_content
+            )
 
     def _test_migrate_revisions(self):
         """Test whether all revisions have been updated properly
@@ -134,12 +139,9 @@ class BaseMigrationTest(TestCase):
             ):
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
-                for old_block, new_block in zip(old_content, new_content):
-                    self.assertEqual(old_block["id"], new_block["id"])
-                    if old_block["type"] == "char1":
-                        self.assertEqual(new_block["type"], "renamed1")
-                    else:
-                        self.assertEqual(old_block["type"], new_block["type"])
+                self.assertBlocksRenamed(
+                    old_content=old_content, new_content=new_content
+                )
 
     def _test_always_migrate_live_and_latest_revisions(self):
         """Test whether latest and live revisions are always updated
@@ -167,12 +169,11 @@ class BaseMigrationTest(TestCase):
                 )
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
-                for old_block, new_block in zip(old_content, new_content):
-                    self.assertEqual(old_block["id"], new_block["id"])
-                    if is_latest_or_live and old_block["type"] == "char1":
-                        self.assertEqual(new_block["type"], "renamed1")
-                    else:
-                        self.assertEqual(old_block["type"], new_block["type"])
+                self.assertBlocksRenamed(
+                    old_content=old_content,
+                    new_content=new_content,
+                    is_altered=is_latest_or_live,
+                )
 
     def _test_migrate_revisions_from_date(self):
         """Test whether revisions from a given date onwards are updated
@@ -202,12 +203,11 @@ class BaseMigrationTest(TestCase):
                 is_altered = is_latest_or_live or is_after_revisions_from
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
-                for old_block, new_block in zip(old_content, new_content):
-                    self.assertEqual(old_block["id"], new_block["id"])
-                    if is_altered and old_block["type"] == "char1":
-                        self.assertEqual(new_block["type"], "renamed1")
-                    else:
-                        self.assertEqual(old_block["type"], new_block["type"])
+                self.assertBlocksRenamed(
+                    old_content=old_content,
+                    new_content=new_content,
+                    is_altered=is_altered,
+                )
 
 
 class TestNonPageModelWithoutRevisions(BaseMigrationTest):
