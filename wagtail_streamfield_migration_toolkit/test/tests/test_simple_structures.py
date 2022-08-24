@@ -37,9 +37,9 @@ class FieldChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -60,9 +60,9 @@ class FieldChildBlockTest(TestCase):
         Check whether all `char1` blocks have been removed and whether other blocks are intact.
         """
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            RemoveStreamChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=RemoveStreamChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -80,9 +80,9 @@ class FieldChildBlockTest(TestCase):
         Check whether the ids and values from the `char1` blocks are intact in the list children.
         """
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            StreamChildrenToListBlockOperation(
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=StreamChildrenToListBlockOperation(
                 block_name="char1", list_block_name="list1"
             ),
             streamfield=models.SampleModel.content,
@@ -117,9 +117,9 @@ class FieldChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            StreamChildrenToStreamBlockOperation(
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=StreamChildrenToStreamBlockOperation(
                 block_names=["char1"], stream_block_name="stream1"
             ),
             streamfield=models.SampleModel.content,
@@ -148,9 +148,9 @@ class FieldChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            StreamChildrenToStreamBlockOperation(
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=StreamChildrenToStreamBlockOperation(
                 block_names=["char1", "char2"], stream_block_name="stream1"
             ),
             streamfield=models.SampleModel.content,
@@ -179,9 +179,9 @@ class FieldChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "",
-            StreamChildrenToStructBlockOperation("char1", "struct1"),
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=StreamChildrenToStructBlockOperation("char1", "struct1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -208,9 +208,9 @@ class FieldChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "char1",
-            AlterBlockValueOperation(new_value="foo"),
+            raw_data=self.raw_data,
+            block_path_str="char1",
+            operation=AlterBlockValueOperation(new_value="foo"),
             streamfield=models.SampleModel.content,
         )
 
@@ -245,9 +245,9 @@ class FieldStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestruct",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestruct",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -268,9 +268,9 @@ class FieldStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestruct",
-            RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestruct",
+            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -305,9 +305,9 @@ class FieldStructChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestruct",
-            RemoveStructChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestruct",
+            operation=RemoveStructChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -355,9 +355,9 @@ class FieldStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestream",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestream",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
         self.assertEqual(altered_raw_data[0], self.raw_data[0])
@@ -377,9 +377,9 @@ class FieldStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestream",
-            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestream",
+            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -419,9 +419,9 @@ class FieldStreamChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplestream",
-            RemoveStreamChildrenOperation(name="char1"),
+            raw_data=self.raw_data,
+            block_path_str="simplestream",
+            operation=RemoveStreamChildrenOperation(name="char1"),
             streamfield=models.SampleModel.content,
         )
 
@@ -459,9 +459,9 @@ class FieldListChildBlockTest(TestCase):
         """
 
         altered_raw_data = apply_changes_to_raw_data(
-            self.raw_data,
-            "simplelist",
-            ListChildrenToStructBlockOperation(block_name="text"),
+            raw_data=self.raw_data,
+            block_path_str="simplelist",
+            operation=ListChildrenToStructBlockOperation(block_name="text"),
             streamfield=models.SampleModel.content,
         )
 

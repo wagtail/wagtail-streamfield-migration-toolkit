@@ -61,3 +61,17 @@ class SampleModelFactory(DjangoModelFactory):
 
     class Meta:
         model = models.SampleModel
+
+
+class SamplePageFactory(wagtail_factories.PageFactory):
+    content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
+
+    class Meta:
+        model = models.SamplePage
+
+
+class SampleModelWithRevisionsFactory(DjangoModelFactory):
+    content = wagtail_factories.StreamFieldFactory(BaseStreamBlockFactory)
+
+    class Meta:
+        model = models.SampleModelWithRevisions
