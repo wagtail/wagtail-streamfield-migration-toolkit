@@ -15,9 +15,44 @@ from wagtail_streamfield_migration_toolkit.operations import (
 from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
 
 
-class BaseMigrationTest(TestCase):
+# TODO test multiple operations in one go
+
+
+class MigrationTestMixin:
     model = None
-    factory = None
+    default_operation_and_block_path = [
+        (
+            RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            "",
+        )
+    ]
+
+    def apply_migration(
+        self,
+        revisions_from=None,
+        operations_and_block_path=default_operation_and_block_path,
+    ):
+        migration = Migration(
+            "test_migration", "wagtail_streamfield_migration_toolkit_test"
+        )
+        migration_operation = MigrateStreamData(
+            app_name="wagtail_streamfield_migration_toolkit_test",
+            model_name=self.model.__name__,
+            field_name="content",
+            operations_and_block_paths=operations_and_block_path,
+            revisions_from=revisions_from,
+        )
+        migration.operations = [migration_operation]
+
+        loader = MigrationLoader(connection=connection)
+        loader.build_graph()
+        project_state = loader.project_state()
+        schema_editor = connection.schema_editor(atomic=migration.atomic)
+        migration.apply(project_state, schema_editor)
+
+
+class BaseMigrationTest(TestCase, MigrationTestMixin):
+    factory = factories.SampleModelFactory
     has_revisions = False
 
     @classmethod
@@ -55,7 +90,7 @@ class BaseMigrationTest(TestCase):
             if cls.has_revisions:
                 for i in range(5):
                     revision = instance.save_revision()
-                    revision.created_at = datetime.datetime.now() - datetime.timedelta(
+                    revision.created_at = timezone.now() - datetime.timedelta(
                         days=(5 - i)
                     )
                     revision.save()
@@ -65,32 +100,6 @@ class BaseMigrationTest(TestCase):
                 cls.original_revisions[instance.id] = list(
                     instance.revisions.all().order_by("id")
                 )
-
-    def apply_migration(self, revisions_from=None):
-        migration = Migration(
-            "test_migration", "wagtail_streamfield_migration_toolkit_test"
-        )
-        migration_operation = MigrateStreamData(
-            app_name="wagtail_streamfield_migration_toolkit_test",
-            model_name=self.model.__name__,
-            field_name="content",
-            operations_and_block_paths=[
-                (
-                    RenameStreamChildrenOperation(
-                        old_name="char1", new_name="renamed1"
-                    ),
-                    "",
-                )
-            ],
-            revisions_from=revisions_from,
-        )
-        migration.operations = [migration_operation]
-
-        loader = MigrationLoader(connection=connection)
-        loader.build_graph()
-        project_state = loader.project_state()
-        schema_editor = connection.schema_editor(atomic=migration.atomic)
-        migration.apply(project_state, schema_editor)
 
     def assertBlocksRenamed(self, old_content, new_content, is_altered=True):
         for old_block, new_block in zip(old_content, new_content):
@@ -119,6 +128,8 @@ class BaseMigrationTest(TestCase):
             self.assertBlocksRenamed(
                 old_content=prev_content, new_content=instance.raw_content
             )
+
+    # TODO test multiple operations applied in one migration
 
     def _test_migrate_revisions(self):
         """Test whether all revisions have been updated properly
