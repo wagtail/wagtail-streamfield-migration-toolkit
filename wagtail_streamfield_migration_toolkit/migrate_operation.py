@@ -158,7 +158,7 @@ class MigrateStreamData(RunPython):
                 except utils.InvalidBlockDefError as e:
                     # TODO this check might be a problem with wagtail 3.0
                     if revision.id not in live_and_latest_revision_ids:
-                        # TODO do something
+                        # TODO do something. A warning?
                         continue
                     else:
                         raise e

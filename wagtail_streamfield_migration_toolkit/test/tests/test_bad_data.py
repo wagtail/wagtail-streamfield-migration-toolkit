@@ -142,9 +142,7 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
 
         for i in range(4):
             revision = instance.save_revision()
-            revision.created_at = datetime.datetime.now() - datetime.timedelta(
-                days=(5 - i)
-            )
+            revision.created_at = timezone.now() - datetime.timedelta(days=(5 - i))
             revision.save()
 
         raw_data = instance.content.raw_data
@@ -169,7 +167,7 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
         instance.save()
 
         revision = instance.save_revision()
-        revision.created_at = datetime.datetime.now()
+        revision.created_at = timezone.now()
         revision.save()
 
         raw_data = instance.content.raw_data
@@ -195,3 +193,71 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
                 ],
                 revisions_from=None,
             )
+
+
+# TODO live revision
+
+
+class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
+    """TODO complete"""
+
+    model = models.SamplePage
+
+    @classmethod
+    def setUpTestData(cls):
+        instance = factories.SamplePageFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="nestedstruct",
+        )
+
+        raw_data = instance.content.raw_data
+        raw_data.append(
+            {
+                "type": "simplestrum",
+                "id": "0001",
+                "value": {"char1": "foo", "char2": "foo"},
+            }
+        )
+        raw_data.append(
+            {
+                "type": "simplestrum",
+                "id": "0002",
+                "value": {"char1": "foo", "char2": "foo"},
+            }
+        )
+        stream_block = instance.content.stream_block
+        instance.content = StreamValue(
+            stream_block=stream_block, stream_data=raw_data, is_lazy=True
+        )
+        instance.save()
+
+        revision = instance.save_revision()
+        revision.created_at = timezone.now() - datetime.timedelta(days=(5))
+        revision.save()
+
+        raw_data = instance.content.raw_data
+        raw_data = raw_data[:2]
+        stream_block = instance.content.stream_block
+        instance.content = StreamValue(
+            stream_block=stream_block, stream_data=raw_data, is_lazy=True
+        )
+        instance.save()
+
+        for i in range(1, 5):
+            revision = instance.save_revision()
+            revision.created_at = timezone.now() - datetime.timedelta(days=(5 - i))
+            revision.save()
+
+    def test_migrate(self):
+        # Should not raise anything in this case
+        self.apply_migration(
+            operations_and_block_path=[
+                (
+                    RenameStructChildrenOperation(
+                        old_name="char1", new_name="renamed1"
+                    ),
+                    "simplestrum",
+                )
+            ],
+            revisions_from=None,
+        )
