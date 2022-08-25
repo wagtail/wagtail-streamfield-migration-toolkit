@@ -148,12 +148,20 @@ class MigrateStreamData(RunPython):
 
             altered_raw_data = json.loads(revision.content[self.field_name])
             for operation, block_path_str in self.operations_and_block_paths:
-                altered_raw_data = utils.apply_changes_to_raw_data(
-                    raw_data=altered_raw_data,
-                    block_path_str=block_path_str,
-                    operation=operation,
-                    streamfield=getattr(model, self.field_name),
-                )
+                try:
+                    altered_raw_data = utils.apply_changes_to_raw_data(
+                        raw_data=altered_raw_data,
+                        block_path_str=block_path_str,
+                        operation=operation,
+                        streamfield=getattr(model, self.field_name),
+                    )
+                except utils.InvalidBlockDefError as e:
+                    # TODO this check might be a problem with wagtail 3.0
+                    if revision.id not in live_and_latest_revision_ids:
+                        # TODO do something
+                        continue
+                    else:
+                        raise e
                 # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 
