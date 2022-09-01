@@ -71,7 +71,14 @@ class MigrateStreamData(RunPython):
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
 
-        self.prepare_revision_query_helper_values(apps, model)
+        if WAGTAIL_VERSION < (4, 0, 0):
+            revision_query_maker = Wagtail3RevisionQueryMaker(
+                apps, model, self.revisions_from
+            )
+        else:
+            revision_query_maker = DefaultRevisionQueryMaker(
+                apps, model, self.revisions_from
+            )
 
         model_queryset = model.objects.annotate(
             raw_content=Cast(F(self.field_name), JSONField())
@@ -80,7 +87,7 @@ class MigrateStreamData(RunPython):
         updated_model_instances_buffer = []
         for instance in model_queryset.iterator(chunk_size=self.chunk_size):
 
-            self.prepare_live_and_latest_revision_ids_from_instance(instance)
+            revision_query_maker.append_instance_data_for_revision_query(instance)
 
             raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
@@ -115,10 +122,12 @@ class MigrateStreamData(RunPython):
             model.objects.bulk_update(updated_model_instances_buffer, [self.field_name])
 
         # For models without revisions
-        if not self.has_revisions:
+        if not revision_query_maker.has_revisions:
             return
 
-        revision_queryset = self.RevisionModel.objects.filter(self.revision_query)
+        revision_queryset = revision_query_maker.RevisionModel.objects.filter(
+            revision_query_maker.revision_query
+        )
 
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
@@ -152,116 +161,143 @@ class MigrateStreamData(RunPython):
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:
-                self.RevisionModel.objects.bulk_update(
+                revision_query_maker.RevisionModel.objects.bulk_update(
                     updated_revisions_buffer, ["content"]
                 )
                 updated_revisions_buffer = []
 
         if len(updated_revisions_buffer) > 0:
-            self.RevisionModel.objects.bulk_update(
+            revision_query_maker.RevisionModel.objects.bulk_update(
                 updated_revisions_buffer, ["content"]
             )
 
-    def prepare_revision_query_helper_values(self, apps, model):
-        """Prepare variables which are needed for building up the revision query.
 
-        Note: Since the PageRevision model has been replaced with the Revision model from wagtail 4
-            onwards, we need somewhat different logic for wagtail 3 and for 4+.
-        """
+class AbstractRevisionQueryMaker:
+    """Helper class for making the revision query needed for the data migration"""
 
-        if WAGTAIL_VERSION < (4, 0, 0):
-            # only pages have revisions
-            if issubclass(model, apps.get_model("wagtailcore", "Page")):
-                self.has_revisions = True
-                self.has_live_revisions = True
-                self.RevisionModel = apps.get_model("wagtailcore", "PageRevision")
-                self.page_ids = []
-                self.live_revision_ids = set()
+    def __init__(self, apps, model, revisions_from):
+        self.apps = apps
+        self.model = model
+        self.revisions_from = revisions_from
+        self.RevisionModel = self.get_revision_model()
+        self.has_revisions = self.get_has_revisions()
+        if self.has_revisions:
+            # latest or live revision ids may be available directly from the instance. In that case
+            # we can keep track of them here.
+            self.instance_field_revision_ids = set()
+            self.revision_query = self.make_revision_query()
 
-                # if revisions_from is given, then query only the revisions created after that
-                # datetime (and the latest and live revisions if they are not after revisions_from)
-                if self.revisions_from is not None:
-                    # All revisions created after the given date.
-                    revision_query = Q(
-                        created_at__gte=self.revisions_from,
-                        page_id__in=self.page_ids,
-                    )
-                    # All live revisions.
-                    revision_query = revision_query | Q(id__in=self.live_revision_ids)
-                    # All latest revisions. For each revision, we check if it is the revision with the
-                    # last `created_at` from all revisions with its `page_id`.
-                    revision_query = revision_query | Q(
-                        id__in=Subquery(
-                            self.RevisionModel.objects.filter(
-                                page_id=OuterRef("page_id")
-                            )
-                            .order_by("-created_at", "-id")
-                            .values_list("id", flat=True)[:1]
-                        ),
-                        page_id__in=self.page_ids,
-                    )
-                    self.revision_query = revision_query
+    def get_revision_model(self):
+        raise NotImplementedError
 
-                # otherwise query all revisions for the page
-                else:
-                    self.revision_query = Q(page_id__in=self.page_ids)
+    def get_has_revisions(self):
+        raise NotImplementedError
 
-            else:
-                self.has_revisions = False
-                self.has_live_revisions = False
+    def append_instance_data_for_revision_query(self, instance):
+        raise NotImplementedError
 
-        else:
-            self.RevisionModel = apps.get_model("wagtailcore", "Revision")
+    def make_revision_query(self):
+        raise NotImplementedError
 
-            # We check if the models have a field `latest_revision` and make sure it points to the
-            # Revision model. This relation is there on models with `RevisionMixin`.
-            self.has_latest_revisions = (
-                hasattr(model, "latest_revision")
-                and model.latest_revision.field.remote_field.model is self.RevisionModel
-            )
-            # Again, check for `live_revision`
-            self.has_live_revisions = (
-                hasattr(model, "live_revision")
-                and model.live_revision.field.remote_field.model is self.RevisionModel
-            )
-            self.has_revisions = self.has_latest_revisions or self.has_live_revisions
 
-            if self.has_revisions:
-                # use a set here since latest_revisions and live_revisions can overlap often
-                self.live_and_latest_revision_ids = set()
+class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
+    """Revision Query maker to support Wagtail 3"""
 
-                ContentType = apps.get_model("contenttypes", "ContentType")
-                contenttype_id = ContentType.objects.get_for_model(model).id
+    def __init__(self, apps, model, revisions_from):
+        self.page_ids = []
 
-                # if revisions_from is given, then query only the revisions created after that
-                # datetime (and the latest and live revisions if they are not after revisions_from)
-                if self.revisions_from is not None:
-                    # All revisions created after the given date.
-                    revision_query = Q(
-                        created_at__gte=self.revisions_from,
-                        content_type_id=contenttype_id,
-                    )
-                    # All live and latest revisions
-                    revision_query = revision_query | Q(
-                        id__in=self.live_and_latest_revision_ids
-                    )
-                    self.revision_query = revision_query
+        super().__init__(apps, model, revisions_from)
 
-                # otherwise query all revisions for the model
-                else:
-                    self.revision_query = Q(content_type_id=contenttype_id)
+    def get_revision_model(self):
+        return self.apps.get_model("wagtailcore", "PageRevision")
 
-    def prepare_live_and_latest_revision_ids_from_instance(self, instance):
+    def get_has_revisions(self):
+        return issubclass(self.model, self.apps.get_model("wagtailcore", "Page"))
 
-        if WAGTAIL_VERSION < (4, 0, 0) and self.has_revisions:
+    def append_instance_data_for_revision_query(self, instance):
+        if self.has_revisions:
             self.page_ids.append(instance.id)
-            self.live_revision_ids.add(instance.live_revision_id)
+            self.instance_field_revision_ids.add(instance.live_revision_id)
 
-        elif self.has_revisions:
+    def make_revision_query(self):
+        if self.revisions_from is not None:
+            # All revisions created after the given date.
+            revision_query = Q(
+                created_at__gte=self.revisions_from,
+                page_id__in=self.page_ids,
+            )
+            # All live revisions.
+            revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
+            # All latest revisions. For each revision, we check if it is the revision with the
+            # last `created_at` from all revisions with its `page_id`.
+            revision_query = revision_query | Q(
+                id__in=Subquery(
+                    self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
+                    .order_by("-created_at", "-id")
+                    .values_list("id", flat=True)[:1]
+                ),
+                page_id__in=self.page_ids,
+            )
+            return revision_query
+
+        # otherwise query all revisions for the page
+        else:
+            return Q(page_id__in=self.page_ids)
+
+
+class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
+    """Revision Query Maker for Wagtail 4+"""
+
+    def __init__(self, apps, model, revisions_from):
+        self.has_live_revisions = False
+        self.has_latest_revisions = False
+
+        super().__init__(apps, model, revisions_from)
+
+    def get_revision_model(self):
+        return self.apps.get_model("wagtailcore", "Revision")
+
+    def get_has_revisions(self):
+        # We check if the models have a field `latest_revision` and make sure it points to the
+        # Revision model. This relation is there on models with `RevisionMixin`.
+        self.has_latest_revisions = (
+            hasattr(self.model, "latest_revision")
+            and self.model.latest_revision.field.remote_field.model
+            is self.RevisionModel
+        )
+        # Again, check for `live_revision`. This relation is there on models with `DraftStateMixin`.
+        self.has_live_revisions = (
+            hasattr(self.model, "live_revision")
+            and self.model.live_revision.field.remote_field.model is self.RevisionModel
+        )
+        return self.has_latest_revisions or self.has_live_revisions
+
+    def append_instance_data_for_revision_query(self, instance):
+        if self.has_revisions:
             # From wagtail 4 onwards, there can be non page models which may have live or latest
             # revisions, but not necessarily having both at the same time.
             if self.has_latest_revisions:
-                self.live_and_latest_revision_ids.add(instance.latest_revision_id)
+                self.instance_field_revision_ids.add(instance.latest_revision_id)
 
             if self.has_live_revisions:
-                self.live_and_latest_revision_ids.add(instance.live_revision_id)
+                self.instance_field_revision_ids.add(instance.live_revision_id)
+
+    def make_revision_query(self):
+        ContentType = self.apps.get_model("contenttypes", "ContentType")
+        contenttype_id = ContentType.objects.get_for_model(self.model).id
+
+        # if revisions_from is given, then query only the revisions created after that
+        # datetime (and the latest and live revisions if they are not after revisions_from)
+        if self.revisions_from is not None:
+            # All revisions created after the given date.
+            revision_query = Q(
+                created_at__gte=self.revisions_from,
+                content_type_id=contenttype_id,
+            )
+            # All live and latest revisions
+            revision_query = revision_query | Q(id__in=self.instance_field_revision_ids)
+            return revision_query
+
+        # otherwise query all revisions for the model
+        else:
+            return Q(content_type_id=contenttype_id)

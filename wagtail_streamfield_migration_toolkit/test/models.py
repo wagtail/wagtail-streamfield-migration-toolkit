@@ -57,3 +57,5 @@ if WAGTAIL_VERSION >= (4, 0, 0):
 
     class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
         content = StreamField(BaseStreamBlock(), use_json_field=True)
+
+# TODO separate into 2 subapps
