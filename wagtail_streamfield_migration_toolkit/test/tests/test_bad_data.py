@@ -3,6 +3,8 @@ from django.test import TestCase
 from django.utils import timezone
 from wagtail.blocks import StreamValue
 
+from wagtail_streamfield_migration_toolkit import migrate_operation
+
 from .test_migrations import MigrationTestMixin
 from .. import factories, models
 from wagtail_streamfield_migration_toolkit.utils import (
@@ -14,13 +16,14 @@ from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
 )
 
-# TODO situations
-#   - existing data and given block path both have a block type which does not exist in the block
-#     definition (of the project state when the migration is run)
-
 
 class TestExceptionRaisedInRawData(TestCase):
-    """TODO complete"""
+    """Directly test whether an exception is raised by apply_changes_to_raw_data for invalid defs.
+
+    This would happen in a situation where the user gives a block path which contains a block name
+    which is not present in the block definition in the project state at which the migration is
+    applied. (There should also be a block in the stream data with the said name for this to happen)
+    """
 
     @classmethod
     def setUpTestData(cls):
@@ -30,19 +33,19 @@ class TestExceptionRaisedInRawData(TestCase):
         ).content.raw_data
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0001",
                 "value": {"char1": "foo", "char2": "foo"},
             }
         )
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0002",
                 "value": {"char1": "foo", "char2": "foo"},
             }
         )
-        raw_data[1]["value"]["stream2"] = [
+        raw_data[1]["value"]["invalid_name2"] = [
             {"type": "char1", "value": "foo", "id": "0003"}
         ]
         cls.raw_data = raw_data
@@ -51,11 +54,11 @@ class TestExceptionRaisedInRawData(TestCase):
         """TODO"""
 
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named simplestrum"
+            InvalidBlockDefError, "No current block def named invalid_name1"
         ):
             apply_changes_to_raw_data(
                 raw_data=self.raw_data,
-                block_path_str="simplestrum",
+                block_path_str="invalid_name1",
                 operation=RenameStructChildrenOperation(
                     old_name="char1", new_name="renamed1"
                 ),
@@ -66,11 +69,11 @@ class TestExceptionRaisedInRawData(TestCase):
         """TODO"""
 
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named stream2"
+            InvalidBlockDefError, "No current block def named invalid_name2"
         ):
             apply_changes_to_raw_data(
                 raw_data=self.raw_data,
-                block_path_str="nestedstruct.stream2",
+                block_path_str="nestedstruct.invalid_name2",
                 operation=RenameStreamChildrenOperation(
                     old_name="char1", new_name="renamed1"
                 ),
@@ -79,7 +82,8 @@ class TestExceptionRaisedInRawData(TestCase):
 
 
 class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
-    """TODO complete"""
+    """Exception should always be raised when applying migration if it occurs while migrating the
+    instance data"""
 
     model = models.SamplePage
 
@@ -92,14 +96,14 @@ class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
         raw_data = instance.content.raw_data
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0001",
                 "value": {"char1": "foo", "char2": "foo"},
             }
         )
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0002",
                 "value": {"char1": "foo", "char2": "foo"},
             }
@@ -113,7 +117,7 @@ class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
     def test_migrate(self):
 
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named simplestrum"
+            InvalidBlockDefError, "No current block def named invalid_name1"
         ):
             self.apply_migration(
                 operations_and_block_path=[
@@ -121,7 +125,7 @@ class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
                         RenameStructChildrenOperation(
                             old_name="char1", new_name="renamed1"
                         ),
-                        "simplestrum",
+                        "invalid_name1",
                     )
                 ],
                 revisions_from=timezone.now() + datetime.timedelta(days=2),
@@ -129,7 +133,8 @@ class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
 
 
 class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
-    """TODO complete"""
+    """Exception should always be raised when applying migration if it occurs while migrating the
+    latest revision data"""
 
     model = models.SamplePage
 
@@ -148,14 +153,14 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
         raw_data = instance.content.raw_data
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0001",
                 "value": {"char1": "foo", "char2": "foo"},
             }
         )
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0002",
                 "value": {"char1": "foo", "char2": "foo"},
             }
@@ -180,7 +185,7 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
 
     def test_migrate(self):
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named simplestrum"
+            InvalidBlockDefError, "No current block def named invalid_name1"
         ):
             self.apply_migration(
                 operations_and_block_path=[
@@ -188,18 +193,16 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
                         RenameStructChildrenOperation(
                             old_name="char1", new_name="renamed1"
                         ),
-                        "simplestrum",
+                        "invalid_name1",
                     )
                 ],
                 revisions_from=None,
             )
 
 
-# TODO live revision
-
-
-class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
-    """TODO complete"""
+class TestExceptionRaisedForLiveRevision(TestCase, MigrationTestMixin):
+    """Exception should always be raised when applying migration if it occurs while migrating the
+    live revision data"""
 
     model = models.SamplePage
 
@@ -213,14 +216,83 @@ class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
         raw_data = instance.content.raw_data
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
                 "id": "0001",
                 "value": {"char1": "foo", "char2": "foo"},
             }
         )
         raw_data.append(
             {
-                "type": "simplestrum",
+                "type": "invalid_name1",
+                "id": "0002",
+                "value": {"char1": "foo", "char2": "foo"},
+            }
+        )
+        stream_block = instance.content.stream_block
+        instance.content = StreamValue(
+            stream_block=stream_block, stream_data=raw_data, is_lazy=True
+        )
+        instance.save()
+
+        revision = instance.save_revision()
+        revision.created_at = timezone.now() - datetime.timedelta(days=(5))
+        revision.save()
+
+        raw_data = instance.content.raw_data
+        raw_data = raw_data[:2]
+        stream_block = instance.content.stream_block
+        instance.content = StreamValue(
+            stream_block=stream_block, stream_data=raw_data, is_lazy=True
+        )
+        instance.live_revision = revision
+        instance.save()
+
+        for i in range(1, 5):
+            revision = instance.save_revision()
+            revision.created_at = timezone.now() - datetime.timedelta(days=(5 - i))
+            revision.save()
+
+    def test_migrate(self):
+        with self.assertRaisesMessage(
+            InvalidBlockDefError, "No current block def named invalid_name1"
+        ):
+            self.apply_migration(
+                operations_and_block_path=[
+                    (
+                        RenameStructChildrenOperation(
+                            old_name="char1", new_name="renamed1"
+                        ),
+                        "invalid_name1",
+                    )
+                ],
+                revisions_from=None,
+            )
+
+
+class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
+    """Exception should not be be raised when applying migration if it occurs while migrating
+    revision data which is not of a live or latest revision. Instead an exception should be logged"""
+
+    model = models.SamplePage
+
+    @classmethod
+    def setUpTestData(cls):
+        instance = factories.SamplePageFactory(
+            content__0__char1__value="Char Block 1",
+            content__1="nestedstruct",
+        )
+
+        raw_data = instance.content.raw_data
+        raw_data.append(
+            {
+                "type": "invalid_name1",
+                "id": "0001",
+                "value": {"char1": "foo", "char2": "foo"},
+            }
+        )
+        raw_data.append(
+            {
+                "type": "invalid_name1",
                 "id": "0002",
                 "value": {"char1": "foo", "char2": "foo"},
             }
@@ -249,15 +321,23 @@ class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
             revision.save()
 
     def test_migrate(self):
-        # Should not raise anything in this case
-        self.apply_migration(
-            operations_and_block_path=[
-                (
-                    RenameStructChildrenOperation(
-                        old_name="char1", new_name="renamed1"
-                    ),
-                    "simplestrum",
-                )
-            ],
-            revisions_from=None,
-        )
+
+        with self.assertLogs(level="ERROR") as cm:
+
+            self.apply_migration(
+                operations_and_block_path=[
+                    (
+                        RenameStructChildrenOperation(
+                            old_name="char1", new_name="renamed1"
+                        ),
+                        "invalid_name1",
+                    )
+                ],
+                revisions_from=None,
+            )
+            self.assertEqual(
+                cm.output[0].splitlines()[0],
+                "ERROR:"
+                + migrate_operation.__name__
+                + ":No current block def named invalid_name1",
+            )

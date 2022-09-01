@@ -1,10 +1,13 @@
 import json
+import logging
 from django.db.models import JSONField, F, Q
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
 
 from wagtail_streamfield_migration_toolkit import utils
+
+logger = logging.getLogger(__name__)
 
 
 class MigrateStreamData(RunPython):
@@ -158,7 +161,7 @@ class MigrateStreamData(RunPython):
                 except utils.InvalidBlockDefError as e:
                     # TODO this check might be a problem with wagtail 3.0
                     if revision.id not in live_and_latest_revision_ids:
-                        # TODO do something. A warning?
+                        logger.exception(e)
                         continue
                     else:
                         raise e
