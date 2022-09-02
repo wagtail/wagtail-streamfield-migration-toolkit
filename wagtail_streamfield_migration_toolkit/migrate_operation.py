@@ -125,8 +125,9 @@ class MigrateStreamData(RunPython):
         if not revision_query_maker.has_revisions:
             return
 
+        revision_query = revision_query_maker.make_revision_query()
         revision_queryset = revision_query_maker.RevisionModel.objects.filter(
-            revision_query_maker.revision_query
+            revision_query
         )
 
         updated_revisions_buffer = []
@@ -185,8 +186,6 @@ class AbstractRevisionQueryMaker:
             # latest or live revision ids may be available directly from the instance. In that case
             # we can keep track of them here.
             self.instance_field_revision_ids = set()
-            self.revision_query = self.make_revision_query()
-            # TODO call this when needed
 
     def get_revision_model(self):
         raise NotImplementedError
