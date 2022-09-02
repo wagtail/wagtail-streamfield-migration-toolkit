@@ -26,6 +26,7 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             "",
         )
     ]
+    app_name = None
 
     @classmethod
     def setUpTestData(cls):
@@ -199,6 +200,7 @@ class TestNonPageModelWithoutRevisions(BaseMigrationTest):
     model = models.SampleModel
     factory = factories.SampleModelFactory
     has_revisions = False
+    app_name = "toolkit_test"
 
     def test_migrate_stream_data(self):
         self._test_migrate_stream_data()
@@ -208,6 +210,7 @@ class TestPage(BaseMigrationTest):
     model = models.SamplePage
     factory = factories.SamplePageFactory
     has_revisions = True
+    app_name = "toolkit_test"
 
     def test_migrate_stream_data(self):
         self._test_migrate_stream_data()
@@ -220,23 +223,3 @@ class TestPage(BaseMigrationTest):
 
     def test_migrate_revisions_from_date(self):
         self._test_migrate_revisions_from_date()
-
-
-if WAGTAIL_VERSION >= (4, 0, 0):
-
-    class TestNonPageModelWithRevisions(BaseMigrationTest):
-        model = models.SampleModelWithRevisions
-        factory = factories.SampleModelWithRevisionsFactory
-        has_revisions = True
-
-        def test_migrate_stream_data(self):
-            self._test_migrate_stream_data()
-
-        def test_migrate_revisions(self):
-            self._test_migrate_revisions()
-
-        def test_always_migrate_live_and_latest_revisions(self):
-            self._test_always_migrate_live_and_latest_revisions()
-
-        def test_migrate_revisions_from_date(self):
-            self._test_migrate_revisions_from_date()

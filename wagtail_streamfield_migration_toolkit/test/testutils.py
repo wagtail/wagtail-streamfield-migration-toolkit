@@ -5,6 +5,11 @@ from django.db.migrations.loader import MigrationLoader
 
 from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
 
+# flake8: noqa
+from .tests.test_migrations import BaseMigrationTest
+
+# TODO consider refactoring after rebasing bad data branch
+
 
 class MigrationTestMixin:
     model = None

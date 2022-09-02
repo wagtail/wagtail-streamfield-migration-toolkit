@@ -186,6 +186,7 @@ class AbstractRevisionQueryMaker:
             # we can keep track of them here.
             self.instance_field_revision_ids = set()
             self.revision_query = self.make_revision_query()
+            # TODO call this when needed
 
     def get_revision_model(self):
         raise NotImplementedError

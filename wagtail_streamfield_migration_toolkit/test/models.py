@@ -1,12 +1,8 @@
 from django.db import models
 from wagtail.fields import StreamField
 from wagtail.blocks import CharBlock, StreamBlock, StructBlock, ListBlock
-from wagtail import VERSION as WAGTAIL_VERSION
 
-if WAGTAIL_VERSION < (4, 0, 0):
-    from wagtail.models import Page
-else:
-    from wagtail.models import Page, RevisionMixin, DraftStateMixin
+from wagtail.models import Page
 
 
 class SimpleStructBlock(StructBlock):
@@ -51,11 +47,3 @@ class SampleModel(models.Model):
 
 class SamplePage(Page):
     content = StreamField(BaseStreamBlock(), use_json_field=True)
-
-
-if WAGTAIL_VERSION >= (4, 0, 0):
-
-    class SampleModelWithRevisions(DraftStateMixin, RevisionMixin, models.Model):
-        content = StreamField(BaseStreamBlock(), use_json_field=True)
-
-# TODO separate into 2 subapps
