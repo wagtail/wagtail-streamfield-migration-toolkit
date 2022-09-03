@@ -41,7 +41,7 @@ class Command(BaseCommand):
         self.migration_name = options["name"]
 
         if not args:
-            raise CommandError("Required args missing")
+            raise CommandError("Required args missing: path")
         try:
             self.app_label, self.model_label, self.field_label = args[0].split(".")
         except ValueError:
@@ -53,21 +53,19 @@ class Command(BaseCommand):
         loader.build_graph()
         self.project_state = loader.project_state()
 
-        # TODO do we have to add a check for flags being mutually exclusive?
+        migration_operations = []
         if self.is_rename:
-            migration_operation = self.make_rename_operation(*options["rename"])
-        elif self.is_remove:
-            migration_operation = self.make_remove_operation(*options["remove"])
-            pass
-        else:
-            # TODO do we generate an empty migration with the imports?
-            # Check if its possible to add comments if so.
-            migration_operation = None
-            pass
+            migration_operations.append(self.make_rename_operation(*options["rename"]))
+        if self.is_remove:
+            migration_operations.append(self.make_remove_operation(*options["remove"]))
+        if not self.is_rename and not self.is_remove:
+            migration_operations.append(self.make_empty_operation())
+
+        # TODO do we generate an empty migration with the imports if no flags?
+        # Check if its possible to add comments if so.
 
         migration = Migration(self.migration_name, self.app_label)
-        if migration_operation:
-            migration.operations = [migration_operation]
+        migration.operations = migration_operations
 
         autodetector = MigrationAutodetector(
             self.project_state, ProjectState.from_apps(apps)
@@ -85,7 +83,8 @@ class Command(BaseCommand):
                 # check here
                 writer = MigrationWriter(migration, True)
                 migration_string = writer.as_string()
-                print(migration_string)
+                with open(writer.path, "w", encoding="utf-8") as fh:
+                    fh.write(migration_string)
 
     def make_rename_operation(self, *args):
 
@@ -94,10 +93,10 @@ class Command(BaseCommand):
                 old_name, new_name = args
                 block_path_str = ""
             else:
-                block_path_str, old_name, new_name = args
+                old_name, new_name, block_path_str = args
         except ValueError:
             raise CommandError(
-                "Rename operation needs the following arguments: <block_path> <old_name> <new_name>"
+                "Rename operation needs the following arguments: <old_name> <new_name> <?block_path>"
             )
 
         self.block_path_str = block_path_str
@@ -111,7 +110,9 @@ class Command(BaseCommand):
             raise CommandError("Invalid Block Structure")
 
         if not self.migration_name:
-            self.migration_name = "rename_{}_to_{}".format(old_name, new_name)
+            self.migration_name = "rename_{}_to_{}".format(
+                self.model_label + "_" + self.field_label + "_" + old_name, new_name
+            )
         migration_operation = MigrateStreamData(
             self.app_label,
             self.model_label,
@@ -127,10 +128,10 @@ class Command(BaseCommand):
                 block_name = args[0]
                 block_path_str = ""
             else:
-                block_path_str, block_name = args
+                block_name, block_path_str = args
         except ValueError:
             raise CommandError(
-                "Remove operation needs the following arguments: <block_path> <block_name>"
+                "Remove operation needs the following arguments: <block_name> <?block_path>"
             )
 
         self.block_path_str = block_path_str
@@ -144,12 +145,23 @@ class Command(BaseCommand):
             raise CommandError("Invalid Block Structure")
 
         if not self.migration_name:
-            self.migration_name = "remove_block_{}".format(block_name)
+            self.migration_name = "remove_block_{}".format(
+                self.model_label + "_" + self.field_label + "_" + block_name
+            )
         migration_operation = MigrateStreamData(
             self.app_label,
             self.model_label,
             self.field_label,
             [(data_operation(block_name), block_path_str)],
+        )
+        return migration_operation
+
+    def make_empty_operation(self):
+        migration_operation = MigrateStreamData(
+            self.app_label,
+            self.model_label,
+            self.field_label,
+            [],
         )
         return migration_operation
 
@@ -164,8 +176,10 @@ class Command(BaseCommand):
         block_def = stream_field.field.stream_block
         while len(block_path) > 0:
             try:
+                # For struct and stream block since they have `child_blocks`
                 block_def = block_def.child_blocks[block_path[0]]
             except AttributeError:
+                # For list blocks since they have `child_block`
                 block_def = block_def.child_block
             except KeyError:
                 raise CommandError("Invalid Block Path")
