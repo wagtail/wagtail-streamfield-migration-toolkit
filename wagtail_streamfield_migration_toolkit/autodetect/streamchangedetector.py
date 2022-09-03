@@ -1,11 +1,7 @@
 from wagtail.blocks import StreamBlock, StructBlock
 
 from .questioner import InteractiveDataMigrationQuestioner
-from .comparers import (
-    BaseBlockDefComparer,
-    DefaultBlockDefComparer,
-    StreamOrStructBlockDefComparer,
-)
+from .comparers import block_def_comparer_registry
 from ..operations import (
     RenameStreamChildrenOperation,
     RenameStructChildrenOperation,
@@ -48,8 +44,12 @@ class StreamDefChangeDetector:
         self.generate_remove_operations()
 
         self.merged_operations_and_block_paths = []
-        self.merged_operations_and_block_paths.extend(self.rename_operations_and_block_paths)
-        self.merged_operations_and_block_paths.extend(self.remove_operations_and_block_paths)
+        self.merged_operations_and_block_paths.extend(
+            self.rename_operations_and_block_paths
+        )
+        self.merged_operations_and_block_paths.extend(
+            self.remove_operations_and_block_paths
+        )
 
     def find_renamed_or_removed_defs(
         self, old_block_def, new_block_def, parent_path=""
@@ -76,6 +76,7 @@ class StreamDefChangeDetector:
         #   places (in the recursion itself and when comparing). Also see if it's even needed to
         #   check all nested children or only the direct children would be okay.
 
+        # TODO see if you can have a get children method or something
         if hasattr(old_block_def, "child_blocks"):
             # for StreamBlocks and StructBlocks
             old_child_defs = old_block_def.child_blocks
@@ -86,7 +87,7 @@ class StreamDefChangeDetector:
             new_child_defs = {"item": new_block_def.child_block}
         else:
             # Non Structural Blocks don't have children
-            # TODO figure out what we need to check for these
+            # TODO figure out if/what we need to check for these
             return
 
         # To keep track of the block path. We will need this for creating operations and keeping
@@ -116,20 +117,24 @@ class StreamDefChangeDetector:
                 is_child_mapped = True
 
             else:
-                comparer: BaseBlockDefComparer = self.get_comparer(old_child_def)
+                comparer = block_def_comparer_registry.get_block_def_comparer(
+                    old_child_def
+                )
 
                 # Find out if the block maps to one of the new only children. If it maps, that
                 # would mean that the block has been renamed
+                # TODO maybe see if we can order by a similarity score. Have comparer return the
+                # similarity score
                 for new_only_child_name in new_only_child_names:
                     new_child_path = parent_path + path_suffix + new_only_child_name
                     new_child_def = new_child_defs[new_only_child_name]
 
                     # compare the blocks and find whether they are similar enough to be mapped
-                    similar = comparer.compare(
+                    similarity_score = comparer.compare(
                         old_def=old_child_def,
                         new_def=new_child_def,
                     )
-                    if similar:
+                    if similarity_score >= 0.5:
                         # ask user whether the block was indeed renamed
                         is_renamed = self.questioner.ask_block_rename(
                             old_path=old_child_path, new_path=new_child_path
@@ -159,13 +164,6 @@ class StreamDefChangeDetector:
                 is_removed = self.questioner.ask_block_remove(old_path=old_child_path)
                 if is_removed:
                     self.remove_changes.append((old_child_path, old_block_def))
-
-    @staticmethod
-    def get_comparer(old_def):
-        if isinstance(old_def, StreamBlock) or isinstance(old_def, StructBlock):
-            return StreamOrStructBlockDefComparer
-        else:
-            return DefaultBlockDefComparer
 
     def generate_rename_operations(self):
         """TODO description"""
