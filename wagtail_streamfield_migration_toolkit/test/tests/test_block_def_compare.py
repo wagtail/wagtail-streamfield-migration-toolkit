@@ -2,55 +2,94 @@ from django.test import TestCase
 from wagtail.blocks import (
     CharBlock,
     IntegerBlock,
-    # DateBlock,
-    # StreamBlock,
+    DateBlock,
+    StreamBlock,
     StructBlock,
-    # ListBlock,
+    ListBlock,
+    TextBlock,
+    BooleanBlock,
 )
-
-# from wagtail.snippets.blocks import SnippetChooserBlock
 
 from wagtail_streamfield_migration_toolkit.autodetect.comparers import (
-    StreamOrStructBlockDefComparer,
     # DefaultBlockDefComparer,
+    StreamBlockDefComparer,
+    StructBlockDefComparer,
 )
 
 
-class NameBlockWithInitials(StructBlock):
-    first_name = CharBlock()
-    last_name = CharBlock()
-    initials = CharBlock()
+class ThreeFieldStruct(StructBlock):
+    char_block = CharBlock()
+    int_block = IntegerBlock()
+    date_block = DateBlock()
 
 
-class NameBlockWithoutInitials(StructBlock):
-    first_name = CharBlock()
-    last_name = CharBlock()
+class FourFieldStruct(ThreeFieldStruct):
+    list_char_block = ListBlock(CharBlock())
 
 
-class PersonalDetails(StructBlock):
-    name = CharBlock()
-    age = IntegerBlock()
+class DiffThreeFieldStruct(StructBlock):
+    my_text = TextBlock()
+    my_int = IntegerBlock()
+    my_boolean = BooleanBlock()
 
 
 class TestStructBlocks(TestCase):
-    def test_similar(self):
-        similar = StreamOrStructBlockDefComparer.compare(
-            NameBlockWithInitials(), NameBlockWithoutInitials()
-        )
-        self.assertTrue(similar)
+    def test(self):
+        # These will need to change if we change the logic for comparison
 
-        similar = StreamOrStructBlockDefComparer.compare(
-            NameBlockWithoutInitials(), NameBlockWithInitials()
+        self.assertAlmostEqual(
+            StructBlockDefComparer.compare(FourFieldStruct(), ThreeFieldStruct()),
+            3 / 4,
+            delta=0.01,
         )
-        self.assertTrue(similar)
 
-    def test_dissimilar(self):
-        similar = StreamOrStructBlockDefComparer.compare(
-            NameBlockWithInitials(), PersonalDetails()
+        self.assertAlmostEqual(
+            StructBlockDefComparer.compare(ThreeFieldStruct(), FourFieldStruct()),
+            3 / 3,
+            delta=0.01,
         )
-        self.assertFalse(similar)
 
-        similar = StreamOrStructBlockDefComparer.compare(
-            PersonalDetails(), NameBlockWithInitials()
+        self.assertAlmostEqual(
+            StructBlockDefComparer.compare(ThreeFieldStruct(), DiffThreeFieldStruct()),
+            0 / 3,
+            delta=0.01,
         )
-        self.assertFalse(similar)
+
+
+class ThreeFieldStream(StreamBlock):
+    char_block = CharBlock()
+    int_block = IntegerBlock()
+    date_block = DateBlock()
+
+
+class FourFieldStream(ThreeFieldStream):
+    list_char_block = ListBlock(CharBlock())
+
+
+class DiffThreeFieldStream(StreamBlock):
+    my_text = TextBlock()
+    my_int = IntegerBlock()
+    my_boolean = BooleanBlock()
+
+
+class TestStreamBlocks(TestCase):
+    def test(self):
+        # These will need to change if we change the logic for comparison
+
+        self.assertAlmostEqual(
+            StreamBlockDefComparer.compare(FourFieldStream(), ThreeFieldStream()),
+            3 / 4,
+            delta=0.01,
+        )
+
+        self.assertAlmostEqual(
+            StreamBlockDefComparer.compare(ThreeFieldStream(), FourFieldStream()),
+            3 / 3,
+            delta=0.01,
+        )
+
+        self.assertAlmostEqual(
+            StreamBlockDefComparer.compare(ThreeFieldStream(), DiffThreeFieldStream()),
+            0 / 3,
+            delta=0.01,
+        )
