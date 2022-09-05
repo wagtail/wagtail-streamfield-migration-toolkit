@@ -113,11 +113,15 @@ class TestExceptionRaisedForInstance(TestCase, MigrationTestMixin):
             stream_block=stream_block, stream_data=raw_data, is_lazy=True
         )
         instance.save()
+        cls.instance = instance
 
     def test_migrate(self):
 
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named invalid_name1"
+            InvalidBlockDefError,
+            "No current block def named invalid_name1 in {} object ({})".format(
+                self.instance.__class__.__name__, self.instance.id
+            ),
         ):
             self.apply_migration(
                 operations_and_block_path=[
@@ -174,6 +178,7 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
         revision = instance.save_revision()
         revision.created_at = timezone.now()
         revision.save()
+        cls.invalid_revision = revision
 
         raw_data = instance.content.raw_data
         raw_data = raw_data[:2]
@@ -185,7 +190,12 @@ class TestExceptionRaisedForLatestRevision(TestCase, MigrationTestMixin):
 
     def test_migrate(self):
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named invalid_name1"
+            InvalidBlockDefError,
+            "No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+                self.invalid_revision.__class__.__name__,
+                self.invalid_revision.id,
+                self.invalid_revision.created_at,
+            ),
         ):
             self.apply_migration(
                 operations_and_block_path=[
@@ -237,6 +247,7 @@ class TestExceptionRaisedForLiveRevision(TestCase, MigrationTestMixin):
         revision = instance.save_revision()
         revision.created_at = timezone.now() - datetime.timedelta(days=(5))
         revision.save()
+        cls.invalid_revision = revision
 
         raw_data = instance.content.raw_data
         raw_data = raw_data[:2]
@@ -254,7 +265,12 @@ class TestExceptionRaisedForLiveRevision(TestCase, MigrationTestMixin):
 
     def test_migrate(self):
         with self.assertRaisesMessage(
-            InvalidBlockDefError, "No current block def named invalid_name1"
+            InvalidBlockDefError,
+            "No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+                self.invalid_revision.__class__.__name__,
+                self.invalid_revision.id,
+                self.invalid_revision.created_at,
+            ),
         ):
             self.apply_migration(
                 operations_and_block_path=[
@@ -306,6 +322,7 @@ class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
         revision = instance.save_revision()
         revision.created_at = timezone.now() - datetime.timedelta(days=(5))
         revision.save()
+        cls.invalid_revision = revision
 
         raw_data = instance.content.raw_data
         raw_data = raw_data[:2]
@@ -337,7 +354,10 @@ class TestExceptionIgnoredForOtherRevisions(TestCase, MigrationTestMixin):
             )
             self.assertEqual(
                 cm.output[0].splitlines()[0],
-                "ERROR:"
-                + migrate_operation.__name__
-                + ":No current block def named invalid_name1",
+                "ERROR:{}:No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+                    migrate_operation.__name__,
+                    self.invalid_revision.__class__.__name__,
+                    self.invalid_revision.id,
+                    self.invalid_revision.created_at,
+                ),
             )

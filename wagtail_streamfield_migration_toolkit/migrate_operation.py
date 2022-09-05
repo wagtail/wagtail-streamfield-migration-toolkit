@@ -99,16 +99,20 @@ class MigrateStreamData(RunPython):
                 if has_live_revisions:
                     live_and_latest_revision_ids.add(instance.live_revision_id)
 
-            altered_raw_data = instance.raw_content
+            raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
-                altered_raw_data = utils.apply_changes_to_raw_data(
-                    raw_data=altered_raw_data,
-                    block_path_str=block_path_str,
-                    operation=operation,
-                    streamfield=getattr(model, self.field_name),
-                )
-                # - TODO add a return value to util to know if changes were made
-                # - TODO save changed only
+                try:
+                    altered_raw_data = utils.apply_changes_to_raw_data(
+                        raw_data=raw_data,
+                        block_path_str=block_path_str,
+                        operation=operation,
+                        streamfield=getattr(model, self.field_name),
+                    )
+                    # - TODO add a return value to util to know if changes were made
+                    # - TODO save changed only
+                except utils.InvalidBlockDefError as e:
+                    e.add_instance_data(instance)
+                    raise e
 
             stream_block = getattr(instance, self.field_name).stream_block
             setattr(
@@ -149,17 +153,18 @@ class MigrateStreamData(RunPython):
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
 
-            altered_raw_data = json.loads(revision.content[self.field_name])
+            raw_data = json.loads(revision.content[self.field_name])
             for operation, block_path_str in self.operations_and_block_paths:
                 try:
                     altered_raw_data = utils.apply_changes_to_raw_data(
-                        raw_data=altered_raw_data,
+                        raw_data=raw_data,
                         block_path_str=block_path_str,
                         operation=operation,
                         streamfield=getattr(model, self.field_name),
                     )
                 except utils.InvalidBlockDefError as e:
                     # TODO this check might be a problem with wagtail 3.0
+                    e.add_revision_data(revision)
                     if revision.id not in live_and_latest_revision_ids:
                         logger.exception(e)
                         continue

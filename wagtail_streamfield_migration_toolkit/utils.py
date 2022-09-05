@@ -2,7 +2,19 @@ from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
 
 class InvalidBlockDefError(Exception):
-    pass
+    def add_revision_data(self, revision):
+        self.args = (
+            self.args[0]
+            + " in {} object ({}) timestamp {}".format(
+                revision.__class__.__name__, revision.id, revision.created_at
+            ),
+        ) + self.args[1:]
+
+    def add_instance_data(self, instance):
+        self.args = (
+            self.args[0]
+            + " in {} object ({})".format(instance.__class__.__name__, instance.id),
+        ) + self.args[1:]
 
 
 def should_alter_block(block_name, block_path):
@@ -142,9 +154,7 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
             try:
                 child_block_def = block_def.child_blocks[key]
             except KeyError:
-                raise InvalidBlockDefError(
-                    "No current block def named {}".format(key)
-                )
+                raise InvalidBlockDefError("No current block def named {}".format(key))
             altered_child_value = map_block_value(
                 child_value,
                 block_def=child_block_def,
