@@ -51,7 +51,7 @@ class TestExceptionRaisedInRawData(TestCase):
         cls.raw_data = raw_data
 
     def test_rename_invalid_stream_child(self):
-        """TODO"""
+        """Test whether Exception is raised in when recursing through stream block data"""
 
         with self.assertRaisesMessage(
             InvalidBlockDefError, "No current block def named invalid_name1"
@@ -66,7 +66,7 @@ class TestExceptionRaisedInRawData(TestCase):
             )
 
     def test_rename_invalid_struct_child(self):
-        """TODO"""
+        """Test whether Exception is raised in when recursing through struct block data"""
 
         with self.assertRaisesMessage(
             InvalidBlockDefError, "No current block def named invalid_name2"

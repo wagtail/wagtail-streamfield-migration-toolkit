@@ -1,10 +1,6 @@
 from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
 
-# TODO handle block_defs not existing? we'll do this later
-# TODO handle old list format
-
-
 class InvalidBlockDefError(Exception):
     pass
 
@@ -104,7 +100,6 @@ def map_stream_block_value(stream_block_value, block_def, block_path, **kwargs):
             try:
                 child_block_def = block_def.child_blocks[child_block["type"]]
             except KeyError:
-                # TODO complete for all 3 funcs, figure out message
                 raise InvalidBlockDefError(
                     "No current block def named {}".format(child_block["type"])
                 )
@@ -147,7 +142,6 @@ def map_struct_block_value(struct_block_value, block_def, block_path, **kwargs):
             try:
                 child_block_def = block_def.child_blocks[key]
             except KeyError:
-                # TODO complete for all 3 funcs, figure out message
                 raise InvalidBlockDefError(
                     "No current block def named {}".format(key)
                 )
