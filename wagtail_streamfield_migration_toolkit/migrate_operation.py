@@ -102,7 +102,7 @@ class MigrateStreamData(RunPython):
             raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
                 try:
-                    altered_raw_data = utils.apply_changes_to_raw_data(
+                    raw_data = utils.apply_changes_to_raw_data(
                         raw_data=raw_data,
                         block_path_str=block_path_str,
                         operation=operation,
@@ -118,7 +118,7 @@ class MigrateStreamData(RunPython):
             setattr(
                 instance,
                 self.field_name,
-                StreamValue(stream_block, altered_raw_data, is_lazy=True),
+                StreamValue(stream_block, raw_data, is_lazy=True),
             )
             updated_model_instances_buffer.append(instance)
 
@@ -156,7 +156,7 @@ class MigrateStreamData(RunPython):
             raw_data = json.loads(revision.content[self.field_name])
             for operation, block_path_str in self.operations_and_block_paths:
                 try:
-                    altered_raw_data = utils.apply_changes_to_raw_data(
+                    raw_data = utils.apply_changes_to_raw_data(
                         raw_data=raw_data,
                         block_path_str=block_path_str,
                         operation=operation,
@@ -173,7 +173,7 @@ class MigrateStreamData(RunPython):
                 # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 
-            revision.content[self.field_name] = json.dumps(altered_raw_data)
+            revision.content[self.field_name] = json.dumps(raw_data)
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:

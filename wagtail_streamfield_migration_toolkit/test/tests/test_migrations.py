@@ -2,58 +2,29 @@ import json
 import datetime
 from django.utils import timezone
 from django.test import TestCase
-from django.db import connection
-from django.db.migrations.loader import MigrationLoader
-from django.db.migrations import Migration
+
 from django.db.models import JSONField, F
 from django.db.models.functions import Cast
 
 from .. import factories, models
+from ..testutils import MigrationTestMixin
 from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
 )
-from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
 
 
 # TODO test multiple operations in one go
 
 
-class MigrationTestMixin:
-    model = None
+class BaseMigrationTest(TestCase, MigrationTestMixin):
+    factory = None
+    has_revisions = False
     default_operation_and_block_path = [
         (
             RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
             "",
         )
     ]
-
-    def apply_migration(
-        self,
-        revisions_from=None,
-        operations_and_block_path=default_operation_and_block_path,
-    ):
-        migration = Migration(
-            "test_migration", "wagtail_streamfield_migration_toolkit_test"
-        )
-        migration_operation = MigrateStreamData(
-            app_name="wagtail_streamfield_migration_toolkit_test",
-            model_name=self.model.__name__,
-            field_name="content",
-            operations_and_block_paths=operations_and_block_path,
-            revisions_from=revisions_from,
-        )
-        migration.operations = [migration_operation]
-
-        loader = MigrationLoader(connection=connection)
-        loader.build_graph()
-        project_state = loader.project_state()
-        schema_editor = connection.schema_editor(atomic=migration.atomic)
-        migration.apply(project_state, schema_editor)
-
-
-class BaseMigrationTest(TestCase, MigrationTestMixin):
-    factory = factories.SampleModelFactory
-    has_revisions = False
 
     @classmethod
     def setUpTestData(cls):
