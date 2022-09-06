@@ -125,7 +125,7 @@ class MigrateStreamData(RunPython):
         if not revision_query_maker.has_revisions:
             return
 
-        revision_queryset = revision_query_maker.make_revision_queryset()
+        revision_queryset = revision_query_maker.get_revision_queryset()
 
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
@@ -192,7 +192,7 @@ class AbstractRevisionQueryMaker:
     def _make_revision_query(self):
         raise NotImplementedError
 
-    def make_revision_queryset(self):
+    def get_revision_queryset(self):
         revision_query = self._make_revision_query()
         return self.RevisionModel.objects.filter(revision_query)
 
