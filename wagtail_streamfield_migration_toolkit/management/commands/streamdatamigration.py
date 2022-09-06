@@ -23,27 +23,29 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "args",
-            metavar="args",
+            metavar="path",
             nargs="*",
-            help="Specify the path of the streamfield to migrate data",
+            help="Specify the path of the streamfield to migrate data: '<app_name>.<model_name>.<field_name>'",
         )
         parser.add_argument("--name", help="Use this name for migration file")
         parser.add_argument(
             "--rename", nargs="*", help="Rename block <path> <old_name> <new_name>"
         )
         parser.add_argument("--remove", nargs="*", help="Remove block <block>")
-        # TODO check better ways to take args
+        # TODO support for more operations
 
-    def handle(self, *args, **options):
+    def handle(self, *path, **options):
 
         self.is_rename = options["rename"] is not None
         self.is_remove = options["remove"] is not None
         self.migration_name = options["name"]
 
-        if not args:
-            raise CommandError("Required args missing: path")
+        if not path:
+            raise CommandError(
+                "Required args missing: path \n'<app_name>.<model_name>.<field_name>'"
+            )
         try:
-            self.app_label, self.model_label, self.field_label = args[0].split(".")
+            self.app_label, self.model_label, self.field_label = path[0].split(".")
         except ValueError:
             raise CommandError(
                 "You must supply path to StreamField as '<app_name>.<model_name>.<field_name>'"
@@ -53,19 +55,25 @@ class Command(BaseCommand):
         loader.build_graph()
         self.project_state = loader.project_state()
 
-        migration_operations = []
+        streamdata_operations_and_block_paths = []
         if self.is_rename:
-            migration_operations.append(self.make_rename_operation(*options["rename"]))
+            streamdata_operations_and_block_paths.append(
+                self.make_rename_operation(*options["rename"])
+            )
         if self.is_remove:
-            migration_operations.append(self.make_remove_operation(*options["remove"]))
-        if not self.is_rename and not self.is_remove:
-            migration_operations.append(self.make_empty_operation())
-
-        # TODO do we generate an empty migration with the imports if no flags?
-        # Check if its possible to add comments if so.
+            streamdata_operations_and_block_paths.append(
+                self.make_remove_operation(*options["remove"])
+            )
 
         migration = Migration(self.migration_name, self.app_label)
-        migration.operations = migration_operations
+        migration.operations = [
+            MigrateStreamData(
+                app_name=self.app_label,
+                model_name=self.model_label,
+                field_name=self.field_label,
+                operations_and_block_paths=streamdata_operations_and_block_paths,
+            )
+        ]
 
         autodetector = MigrationAutodetector(
             self.project_state, ProjectState.from_apps(apps)
@@ -113,13 +121,7 @@ class Command(BaseCommand):
             self.migration_name = "rename_{}_to_{}".format(
                 self.model_label + "_" + self.field_label + "_" + old_name, new_name
             )
-        migration_operation = MigrateStreamData(
-            self.app_label,
-            self.model_label,
-            self.field_label,
-            [(data_operation(old_name, new_name), block_path_str)],
-        )
-        return migration_operation
+        return (data_operation(old_name, new_name), block_path_str)
 
     def make_remove_operation(self, *args):
 
@@ -148,22 +150,7 @@ class Command(BaseCommand):
             self.migration_name = "remove_block_{}".format(
                 self.model_label + "_" + self.field_label + "_" + block_name
             )
-        migration_operation = MigrateStreamData(
-            self.app_label,
-            self.model_label,
-            self.field_label,
-            [(data_operation(block_name), block_path_str)],
-        )
-        return migration_operation
-
-    def make_empty_operation(self):
-        migration_operation = MigrateStreamData(
-            self.app_label,
-            self.model_label,
-            self.field_label,
-            [],
-        )
-        return migration_operation
+        return (data_operation(block_name), block_path_str)
 
     def get_block_def(self):
 

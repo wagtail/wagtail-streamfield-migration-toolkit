@@ -69,7 +69,6 @@ class MigrateStreamData(RunPython):
         )
 
     def deconstruct(self):
-        # TODO import issue with serialization
         _, _, kwargs = super().deconstruct()
         kwargs["app_name"] = self.app_name
         kwargs["model_name"] = self.model_name
