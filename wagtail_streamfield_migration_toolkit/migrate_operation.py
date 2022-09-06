@@ -125,10 +125,7 @@ class MigrateStreamData(RunPython):
         if not revision_query_maker.has_revisions:
             return
 
-        revision_query = revision_query_maker.make_revision_query()
-        revision_queryset = revision_query_maker.RevisionModel.objects.filter(
-            revision_query
-        )
+        revision_queryset = revision_query_maker.make_revision_queryset()
 
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
@@ -162,15 +159,11 @@ class MigrateStreamData(RunPython):
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:
-                revision_query_maker.RevisionModel.objects.bulk_update(
-                    updated_revisions_buffer, ["content"]
-                )
+                revision_query_maker.bulk_update(updated_revisions_buffer)
                 updated_revisions_buffer = []
 
         if len(updated_revisions_buffer) > 0:
-            revision_query_maker.RevisionModel.objects.bulk_update(
-                updated_revisions_buffer, ["content"]
-            )
+            revision_query_maker.bulk_update(updated_revisions_buffer)
 
 
 class AbstractRevisionQueryMaker:
@@ -196,8 +189,15 @@ class AbstractRevisionQueryMaker:
     def append_instance_data_for_revision_query(self, instance):
         raise NotImplementedError
 
-    def make_revision_query(self):
+    def _make_revision_query(self):
         raise NotImplementedError
+
+    def make_revision_queryset(self):
+        revision_query = self._make_revision_query()
+        return self.RevisionModel.objects.filter(revision_query)
+
+    def bulk_update(self, data):
+        self.RevisionModel.objects.bulk_update(data, ["content"])
 
 
 class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
@@ -219,7 +219,7 @@ class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
             self.page_ids.append(instance.id)
             self.instance_field_revision_ids.add(instance.live_revision_id)
 
-    def make_revision_query(self):
+    def _make_revision_query(self):
         if self.revisions_from is not None:
             # All revisions created after the given date.
             revision_query = Q(
@@ -282,7 +282,7 @@ class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
             if self.has_live_revisions:
                 self.instance_field_revision_ids.add(instance.live_revision_id)
 
-    def make_revision_query(self):
+    def _make_revision_query(self):
         ContentType = self.apps.get_model("contenttypes", "ContentType")
         contenttype_id = ContentType.objects.get_for_model(self.model).id
 
