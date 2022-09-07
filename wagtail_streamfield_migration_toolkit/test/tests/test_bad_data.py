@@ -122,7 +122,11 @@ class BadDataMigrationTestCase(TestCase, MigrationTestMixin):
         cls.instance.save()
 
     @classmethod
-    def remove_invalid_instance_data(cls):
+    def create_invalid_revision(cls, delta):
+        cls.append_invalid_instance_data()
+        invalid_revision = cls.create_revision(delta)
+
+        # remove the invalid data from the instance
         raw_data = cls.instance.content.raw_data
         raw_data = raw_data[:2]
         stream_block = cls.instance.content.stream_block
@@ -130,6 +134,8 @@ class BadDataMigrationTestCase(TestCase, MigrationTestMixin):
             stream_block=stream_block, stream_data=raw_data, is_lazy=True
         )
         cls.instance.save()
+
+        return invalid_revision
 
     @classmethod
     def create_revision(cls, delta):
@@ -172,9 +178,7 @@ class TestExceptionRaisedForLatestRevision(BadDataMigrationTestCase):
         for i in range(4):
             cls.create_revision(5 - i)
 
-        cls.append_invalid_instance_data()
-        cls.invalid_revision = cls.create_revision(0)
-        cls.remove_invalid_instance_data()
+        cls.invalid_revision = cls.create_invalid_revision(0)
 
     def test_migrate(self):
         with self.assertRaisesMessage(
@@ -196,10 +200,9 @@ class TestExceptionRaisedForLiveRevision(BadDataMigrationTestCase):
     def setUpTestData(cls):
         cls.create_instance()
 
-        cls.append_invalid_instance_data()
-        cls.invalid_revision = cls.create_revision(5)
+        cls.invalid_revision = cls.create_invalid_revision(5)
         cls.instance.live_revision = cls.invalid_revision
-        cls.remove_invalid_instance_data()
+        cls.instance.save()
 
         for i in range(1, 5):
             cls.create_revision(5 - i)
@@ -225,9 +228,7 @@ class TestExceptionIgnoredForOtherRevisions(BadDataMigrationTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_instance()
-        cls.append_invalid_instance_data()
-        cls.invalid_revision = cls.create_revision(5)
-        cls.remove_invalid_instance_data()
+        cls.invalid_revision = cls.create_invalid_revision(5)
 
         for i in range(1, 5):
             cls.create_revision(5 - i)
