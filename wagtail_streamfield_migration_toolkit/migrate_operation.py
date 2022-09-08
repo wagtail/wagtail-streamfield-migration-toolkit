@@ -166,12 +166,14 @@ class MigrateStreamData(RunPython):
                     if revision.id not in live_and_latest_revision_ids:
                         logger.exception(
                             utils.InvalidBlockDefError(
-                                revision=revision
+                                revision=revision, instance=instance
                             )
                         )
                         continue
                     else:
-                        raise utils.InvalidBlockDefError(revision=revision) from e
+                        raise utils.InvalidBlockDefError(
+                            revision=revision, instance=instance
+                        ) from e
                 # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 

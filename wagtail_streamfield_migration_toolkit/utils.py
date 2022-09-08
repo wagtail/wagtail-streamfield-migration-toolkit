@@ -5,25 +5,26 @@ class InvalidBlockDefError(Exception):
     """Exception for invalid block definitions"""
 
     def __init__(self, *args, instance=None, revision=None, **kwargs):
+        # in the case of a revision pass both instance and revision
         self.instance = instance
         self.revision = revision
         super().__init__(*args, **kwargs)
 
     def __str__(self):
         message = ""
-        message += super().__str__()
-        if self.args:
-            message += "\n"
         if self.instance is not None:
             message += "Invalid block def in {} object ({})".format(
                 self.instance.__class__.__name__, self.instance.id
             )
-        elif self.revision is not None:
-            message += "Invalid block def in {} object ({}) created at {}".format(
-                self.revision.__class__.__name__,
-                self.revision.id,
-                self.revision.created_at,
-            )
+            if self.revision is not None:
+                message += " for revision id ({}) created at {}".format(
+                    self.revision.id,
+                    self.revision.created_at,
+                )
+            if self.args:
+                message += "\n"
+
+        message += super().__str__()
         return message
 
 
