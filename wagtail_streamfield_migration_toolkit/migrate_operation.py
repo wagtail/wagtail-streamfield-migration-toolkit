@@ -167,7 +167,7 @@ class MigrateStreamData(RunPython):
                         logger.exception(
                             utils.InvalidBlockDefError(
                                 revision=revision
-                            ).with_traceback(e.__traceback__)
+                            )
                         )
                         continue
                     else:

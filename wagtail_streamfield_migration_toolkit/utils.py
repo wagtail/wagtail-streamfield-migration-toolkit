@@ -10,17 +10,21 @@ class InvalidBlockDefError(Exception):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
+        message = ""
+        message += super().__str__()
+        if self.args:
+            message += "\n"
         if self.instance is not None:
-            return "Invalid block def in {} object ({})".format(
+            message += "Invalid block def in {} object ({})".format(
                 self.instance.__class__.__name__, self.instance.id
             )
         elif self.revision is not None:
-            return "Invalid block def in {} object ({}) created at {}".format(
+            message += "Invalid block def in {} object ({}) created at {}".format(
                 self.revision.__class__.__name__,
                 self.revision.id,
                 self.revision.created_at,
             )
-        return super().__str__()
+        return message
 
 
 def should_alter_block(block_name, block_path):
