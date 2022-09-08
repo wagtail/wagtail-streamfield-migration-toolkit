@@ -2,19 +2,25 @@ from wagtail.blocks import ListBlock, StreamBlock, StructBlock
 
 
 class InvalidBlockDefError(Exception):
-    def add_revision_data(self, revision):
-        self.args = (
-            self.args[0]
-            + " in {} object ({}) timestamp {}".format(
-                revision.__class__.__name__, revision.id, revision.created_at
-            ),
-        ) + self.args[1:]
+    """Exception for invalid block definitions"""
 
-    def add_instance_data(self, instance):
-        self.args = (
-            self.args[0]
-            + " in {} object ({})".format(instance.__class__.__name__, instance.id),
-        ) + self.args[1:]
+    def __init__(self, *args, instance=None, revision=None, **kwargs):
+        self.instance = instance
+        self.revision = revision
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        if self.instance is not None:
+            return "Invalid block def in {} object ({})".format(
+                self.instance.__class__.__name__, self.instance.id
+            )
+        elif self.revision is not None:
+            return "Invalid block def in {} object ({}) created at {}".format(
+                self.revision.__class__.__name__,
+                self.revision.id,
+                self.revision.created_at,
+            )
+        return super().__str__()
 
 
 def should_alter_block(block_name, block_path):

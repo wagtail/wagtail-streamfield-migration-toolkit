@@ -111,8 +111,7 @@ class MigrateStreamData(RunPython):
                     # - TODO add a return value to util to know if changes were made
                     # - TODO save changed only
                 except utils.InvalidBlockDefError as e:
-                    e.add_instance_data(instance)
-                    raise e
+                    raise utils.InvalidBlockDefError(instance=instance) from e
 
             stream_block = getattr(instance, self.field_name).stream_block
             setattr(
@@ -164,12 +163,15 @@ class MigrateStreamData(RunPython):
                     )
                 except utils.InvalidBlockDefError as e:
                     # TODO this check might be a problem with wagtail 3.0
-                    e.add_revision_data(revision)
                     if revision.id not in live_and_latest_revision_ids:
-                        logger.exception(e)
+                        logger.exception(
+                            utils.InvalidBlockDefError(
+                                revision=revision
+                            ).with_traceback(e.__traceback__)
+                        )
                         continue
                     else:
-                        raise e
+                        raise utils.InvalidBlockDefError(revision=revision) from e
                 # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 

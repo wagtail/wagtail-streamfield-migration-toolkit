@@ -158,7 +158,7 @@ class TestExceptionRaisedForInstance(BadDataMigrationTestCase):
 
         with self.assertRaisesMessage(
             InvalidBlockDefError,
-            "No current block def named invalid_name1 in {} object ({})".format(
+            "Invalid block def in {} object ({})".format(
                 self.instance.__class__.__name__, self.instance.id
             ),
         ):
@@ -183,7 +183,7 @@ class TestExceptionRaisedForLatestRevision(BadDataMigrationTestCase):
     def test_migrate(self):
         with self.assertRaisesMessage(
             InvalidBlockDefError,
-            "No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+            "Invalid block def in {} object ({}) created at {}".format(
                 self.invalid_revision.__class__.__name__,
                 self.invalid_revision.id,
                 self.invalid_revision.created_at,
@@ -210,7 +210,7 @@ class TestExceptionRaisedForLiveRevision(BadDataMigrationTestCase):
     def test_migrate(self):
         with self.assertRaisesMessage(
             InvalidBlockDefError,
-            "No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+            "Invalid block def in {} object ({}) created at {}".format(
                 self.invalid_revision.__class__.__name__,
                 self.invalid_revision.id,
                 self.invalid_revision.created_at,
@@ -239,10 +239,17 @@ class TestExceptionIgnoredForOtherRevisions(BadDataMigrationTestCase):
 
             self.assertEqual(
                 cm.output[0].splitlines()[0],
-                "ERROR:{}:No current block def named invalid_name1 in {} object ({}) timestamp {}".format(
+                "ERROR:{}:Invalid block def in {} object ({}) created at {}".format(
                     migrate_operation.__name__,
                     self.invalid_revision.__class__.__name__,
                     self.invalid_revision.id,
                     self.invalid_revision.created_at,
+                ),
+            )
+
+            self.assertEqual(
+                cm.output[0].splitlines()[-1],
+                "{}: No current block def named invalid_name1".format(
+                    InvalidBlockDefError.__module__ + '.' + InvalidBlockDefError.__name__
                 ),
             )
