@@ -10,9 +10,6 @@ from wagtail_streamfield_migration_toolkit.operations import (
 )
 
 
-# TODO add asserts for ids
-
-
 class FieldStructStreamChildBlockTest(TestCase):
     """Tests involving changes to children of a StreamBlock nested inside a StructBlock
 
@@ -536,7 +533,6 @@ class FieldListStreamChildBlockTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        # TODO rewrite with wagtail_factories when available
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedlist_stream",

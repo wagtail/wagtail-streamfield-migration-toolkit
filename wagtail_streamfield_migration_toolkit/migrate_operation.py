@@ -1,10 +1,13 @@
 import json
+import logging
 from django.db.models import JSONField, F, Q
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
 
 from wagtail_streamfield_migration_toolkit import utils
+
+logger = logging.getLogger(__name__)
 
 
 class MigrateStreamData(RunPython):
@@ -96,22 +99,25 @@ class MigrateStreamData(RunPython):
                 if has_live_revisions:
                     live_and_latest_revision_ids.add(instance.live_revision_id)
 
-            altered_raw_data = instance.raw_content
+            raw_data = instance.raw_content
             for operation, block_path_str in self.operations_and_block_paths:
-                altered_raw_data = utils.apply_changes_to_raw_data(
-                    raw_data=altered_raw_data,
-                    block_path_str=block_path_str,
-                    operation=operation,
-                    streamfield=getattr(model, self.field_name),
-                )
-                # - TODO add a return value to util to know if changes were made
-                # - TODO save changed only
+                try:
+                    raw_data = utils.apply_changes_to_raw_data(
+                        raw_data=raw_data,
+                        block_path_str=block_path_str,
+                        operation=operation,
+                        streamfield=getattr(model, self.field_name),
+                    )
+                    # - TODO add a return value to util to know if changes were made
+                    # - TODO save changed only
+                except utils.InvalidBlockDefError as e:
+                    raise utils.InvalidBlockDefError(instance=instance) from e
 
             stream_block = getattr(instance, self.field_name).stream_block
             setattr(
                 instance,
                 self.field_name,
-                StreamValue(stream_block, altered_raw_data, is_lazy=True),
+                StreamValue(stream_block, raw_data, is_lazy=True),
             )
             updated_model_instances_buffer.append(instance)
 
@@ -146,18 +152,32 @@ class MigrateStreamData(RunPython):
         updated_revisions_buffer = []
         for revision in revision_queryset.iterator(chunk_size=self.chunk_size):
 
-            altered_raw_data = json.loads(revision.content[self.field_name])
+            raw_data = json.loads(revision.content[self.field_name])
             for operation, block_path_str in self.operations_and_block_paths:
-                altered_raw_data = utils.apply_changes_to_raw_data(
-                    raw_data=altered_raw_data,
-                    block_path_str=block_path_str,
-                    operation=operation,
-                    streamfield=getattr(model, self.field_name),
-                )
+                try:
+                    raw_data = utils.apply_changes_to_raw_data(
+                        raw_data=raw_data,
+                        block_path_str=block_path_str,
+                        operation=operation,
+                        streamfield=getattr(model, self.field_name),
+                    )
+                except utils.InvalidBlockDefError as e:
+                    # TODO this check might be a problem with wagtail 3.0
+                    if revision.id not in live_and_latest_revision_ids:
+                        logger.exception(
+                            utils.InvalidBlockDefError(
+                                revision=revision, instance=instance
+                            )
+                        )
+                        continue
+                    else:
+                        raise utils.InvalidBlockDefError(
+                            revision=revision, instance=instance
+                        ) from e
                 # - TODO add a return value to util to know if changes were made
                 # - TODO save changed only
 
-            revision.content[self.field_name] = json.dumps(altered_raw_data)
+            revision.content[self.field_name] = json.dumps(raw_data)
             updated_revisions_buffer.append(revision)
 
             if len(updated_revisions_buffer) == self.chunk_size:
