@@ -27,7 +27,9 @@ class Command(BaseCommand):
         parser.add_argument("--name", help="Use this name for migration file")
         subparsers = parser.add_subparsers(dest="operation_type")
 
-        rename_parser = subparsers.add_parser("rename", help="rename --help")
+        rename_parser = subparsers.add_parser(
+            "rename", help="rename a block. rename --help to see options"
+        )
         rename_parser.add_argument("app_label", help="app name")
         rename_parser.add_argument("old_name", help="name of the block to be renamed")
         rename_parser.add_argument("new_name", help="new name")
@@ -35,28 +37,24 @@ class Command(BaseCommand):
             "paths",
             nargs="+",
             action="extend",
-            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>'",
+            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>' \
+                Note that for rename operations the block being operated on is the parent of the block being \
+                renamed.",
         )
 
-        remove_parser = subparsers.add_parser("remove", help="remove --help")
+        remove_parser = subparsers.add_parser(
+            "remove", help="remove a block. remove --help to see options"
+        )
         remove_parser.add_argument("app_label", help="app name")
         remove_parser.add_argument("block_name", help="name of the block to remove")
         remove_parser.add_argument(
             "paths",
             nargs="+",
             action="extend",
-            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>'",
+            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>' \
+                Note that for remove operations the block being operated on is the parent of the block being \
+                removed.",
         )
-
-        # alter_value_parser = subparsers.add_parser("alter", help="alter --help")
-        # alter_value_parser.add_argument("app_label", help="app name")
-        # alter_value_parser.add_argument("new_value", help="new value")
-        # alter_value_parser.add_argument(
-        #     "paths",
-        #     nargs="+",
-        #     action="extend",
-        #     help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>'",
-        # )
 
         # TODO support for more operations : TODO alter value
 
@@ -64,15 +62,16 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        self.operation_maker = {
-            "rename": self.make_rename_operation,
-            "remove": self.make_remove_operation,
-            # "alter": None,  # TODO
-        }[options["operation_type"]]
+        if options["operation_type"] == "rename":
+            self.operation_maker = self.make_rename_operation
+        elif options["operation_type"] == "remove":
+            self.operation_maker = self.make_remove_operation
+        else:
+            raise CommandError("Call the command with an operation. see --help")
         self.paths = options["paths"]
         self.migration_name = options["name"]
         self.app_label = options["app_label"]
-        self._migration_names = []
+        self._migration_names = set()
 
         # get the project state
         loader = MigrationLoader(connection=connection)
@@ -121,7 +120,10 @@ class Command(BaseCommand):
         # If the user doesn't give a name for the migration file, generate one based on the
         # operations used.
         if not self.migration_name:
-            self.migration_name = "_".join(self._migration_names)[:30]
+            self.migration_name = "_".join(self._migration_names)[:40]
+
+        elif self.migration_name and not self.migration_name.isidentifier():
+            raise CommandError("The migration name must be a valid Python identifier.")
 
         autodetector = MigrationAutodetector(
             self.project_state, ProjectState.from_apps(apps)
@@ -158,7 +160,7 @@ class Command(BaseCommand):
                 "Invalid block structure {} for rename operation.".format(block_def)
             )
 
-        self._migration_names.append(
+        self._migration_names.add(
             "rename_{}_{}_{}_to_{}".format(model_name, field_name, old_name, new_name)
         )
         return (data_operation(old_name, new_name), block_path)
@@ -178,7 +180,7 @@ class Command(BaseCommand):
         else:
             raise CommandError("Invalid Block Structure")
 
-        self._migration_names.append(
+        self._migration_names.add(
             "remove_{}_{}_{}".format(model_name, field_name, block_name)
         )
         return (data_operation(block_name), block_path)
