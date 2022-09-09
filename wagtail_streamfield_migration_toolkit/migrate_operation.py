@@ -69,7 +69,7 @@ class MigrateStreamData(RunPython):
         )
 
     def deconstruct(self):
-        _, _, kwargs = super().deconstruct()
+        _, args, kwargs = super().deconstruct()
         kwargs["app_name"] = self.app_name
         kwargs["model_name"] = self.model_name
         kwargs["field_name"] = self.field_name
@@ -77,7 +77,7 @@ class MigrateStreamData(RunPython):
         kwargs["revisions_from"] = self.revisions_from
         kwargs["chunk_size"] = self.revisions_from
 
-        return (self.__class__.__qualname__, [], kwargs)
+        return (self.__class__.__qualname__, args, kwargs)
 
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
