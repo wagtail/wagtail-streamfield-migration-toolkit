@@ -49,6 +49,9 @@ setup(
             "freezegun>=0.3.8",
             "wagtail-factories==3.1.0",
         ],
+        "docs": [
+            "pydoc-markdown==4.6.3"
+        ]
     },
     zip_safe=False,
 )
