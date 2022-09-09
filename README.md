@@ -2,7 +2,6 @@
 
 a set of reusable utilities to allow Wagtail implementors to easily generate data migrations for changes to StreamField block structure
 
-
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 [![PyPI version](https://badge.fury.io/py/streamfield-migration-toolkit.svg)](https://badge.fury.io/py/streamfield-migration-toolkit)
@@ -11,6 +10,7 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 # Contents
 
 - [Introduction](#introduction)
+  - [Why data migrations?](#why-data-migrations)
 - [Quick Start](#quick-start)
 - [Reference](docs/REFERENCE.md)
 - [Usage](docs/USAGE.md)
@@ -18,11 +18,24 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 
 # Introduction
 
-This package aims to make it easier for developers using StreamField who need to write data 
-migrations when making changes involving blocks/block structure in the StreamField. We expose a 
+This package aims to make it easier for developers using StreamField who need to write data
+migrations when making changes involving blocks/block structure in the StreamField. We expose a
 set of utilities for commonly made changes such as renaming or removing blocks, as well as utility
-functions for recursing through existing Streamfield data and applying changes, which makes it 
+functions for recursing through existing Streamfield data and applying changes, which makes it
 easier to create custom logic for applying changes too.
+
+## Why Data Migrations?
+
+A streamfield is stored as a single column of JSON data in the database, where there are blocks stored (which can be nested to form complex block structures) within the JSON representation. However, as far as django is concerned when making schema migrations, everything inside this column is just a string of JSON data and the schema doesn’t change regardless of the content/structure of the StreamField since it is the same field type before and after the change. Therefore whenever changes are made to StreamFields, any existing data must be changed into the required structure by using a data migration created manually by the user.
+
+Generally, data migrations are done manually by making an empty migration file and writing the forward and backward functions for a RunPython command which will handle the logic for taking the previously saved JSON representation and converting it into the new JSON representation needed.
+
+While this is fairly straightforward for a very simple and small change like changing the name of a CharBlock, where you could define two functions for mapping the data and loop through all the blocks in the StreamField checking whether they are the required block type and applying the mapper accordingly; this can easily get very complicated when nested blocks and multiple fields are involved.
+
+This package would make it easier to write data migrations for streamfield changes by providing utilities
+to recurse through various streamdata structures and map changes, in addition to having several "operations"
+which also handle the logic for altering the data for common use cases like renaming, removing and altering
+values of blocks.
 
 # Quick Start
 
@@ -39,8 +52,8 @@ easier to create custom logic for applying changes too.
 
 ## Quick Usage
 
-Assume we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child 
-streamblock named `mystream` which has a child char block named `field1` which we want to rename to 
+Assume we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child
+streamblock named `mystream` which has a child char block named `field1` which we want to rename to
 `block1`.
 
 ```python
