@@ -39,10 +39,11 @@ easier to create custom logic for applying changes too.
 
 ## Quick Usage
 
-If we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child block
-named `field1` which we want to rename to `block1`,
+Assume we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child 
+streamblock named `mystream` which has a child char block named `field1` which we want to rename to 
+`block1`.
 
-```
+```python
 from django.db import migrations
 
 from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData
@@ -60,11 +61,13 @@ class Migration(migrations.Migration):
             model_name="BlogPage",
             field_name="content",
             operations_and_block_paths=[
-                (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), ""),
+                (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), "stream1"),
             ]
         ),
     ]
 
 ```
+
+Refer [Basic Usage](docs/USAGE.md/#basic-usage) for a longer explanation.
 
 <!-- TODO link to discussion for GSoC -->
