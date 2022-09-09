@@ -83,4 +83,6 @@ class Migration(migrations.Migration):
 
 Refer [Basic Usage](docs/USAGE.md/#basic-usage) for a longer explanation.
 
-<!-- TODO link to discussion for GSoC -->
+<br></br>
+
+##### [This package was originally developed as a GSoC project](https://github.com/sandilsranasinghe/wagtail-streamfield-migration-toolkit/discussions/17)
