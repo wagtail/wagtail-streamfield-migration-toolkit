@@ -12,6 +12,13 @@
   * [StreamChildrenToStreamBlockOperation](#wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStreamBlockOperation)
   * [AlterBlockValueOperation](#wagtail_streamfield_migration_toolkit.operations.AlterBlockValueOperation)
   * [StreamChildrenToStructBlockOperation](#wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStructBlockOperation)
+* [wagtail\_streamfield\_migration\_toolkit.utils](#wagtail_streamfield_migration_toolkit.utils)
+  * [InvalidBlockDefError](#wagtail_streamfield_migration_toolkit.utils.InvalidBlockDefError)
+  * [map\_block\_value](#wagtail_streamfield_migration_toolkit.utils.map_block_value)
+  * [map\_stream\_block\_value](#wagtail_streamfield_migration_toolkit.utils.map_stream_block_value)
+  * [map\_struct\_block\_value](#wagtail_streamfield_migration_toolkit.utils.map_struct_block_value)
+  * [map\_list\_block\_value](#wagtail_streamfield_migration_toolkit.utils.map_list_block_value)
+  * [apply\_changes\_to\_raw\_data](#wagtail_streamfield_migration_toolkit.utils.apply_changes_to_raw_data)
 
 <a id="wagtail_streamfield_migration_toolkit.migrate_operation"></a>
 
@@ -273,4 +280,174 @@ inside the new StructBlock as a child of that StructBlock.
 
 - `block_names` _str_ - names of the child block types to be combined
 - `struct_block_name` _str_ - name of the new StructBlock type
+
+<a id="wagtail_streamfield_migration_toolkit.utils"></a>
+
+# wagtail\_streamfield\_migration\_toolkit.utils
+
+<a id="wagtail_streamfield_migration_toolkit.utils.InvalidBlockDefError"></a>
+
+## InvalidBlockDefError Objects
+
+```python
+class InvalidBlockDefError(Exception)
+```
+
+Exception for invalid block definitions
+
+<a id="wagtail_streamfield_migration_toolkit.utils.map_block_value"></a>
+
+#### map\_block\_value
+
+```python
+def map_block_value(block_value, block_def, block_path, operation, **kwargs)
+```
+
+Maps the value of a block.
+
+**Arguments**:
+
+  block_value:
+  The value of the block. This would be a list or dict of children for structural blocks.
+  block_def:
+  The definition of the block.
+  block_path:
+  A '.' separated list of names of the blocks from the current block (not included) to
+  the nested block of which the value will be passed to the operation.
+  operation:
+  An Operation class instance (extends `BaseBlockOperation`), which has an `apply` method
+  for mapping values.
+  
+
+**Returns**:
+
+  mapped_value:
+
+<a id="wagtail_streamfield_migration_toolkit.utils.map_stream_block_value"></a>
+
+#### map\_stream\_block\_value
+
+```python
+def map_stream_block_value(stream_block_value, block_def, block_path,
+                           **kwargs)
+```
+
+Maps each child block in a StreamBlock value.
+
+**Arguments**:
+
+  stream_block_value:
+  The value of the StreamBlock, a list of child blocks
+  block_def:
+  The definition of the StreamBlock
+  block_path:
+  A '.' separated list of names of the blocks from the current block (not included) to
+  the nested block of which the value will be passed to the operation.
+  
+  Returns
+  mapped_value:
+  The value of the StreamBlock after mapping all the children.
+
+<a id="wagtail_streamfield_migration_toolkit.utils.map_struct_block_value"></a>
+
+#### map\_struct\_block\_value
+
+```python
+def map_struct_block_value(struct_block_value, block_def, block_path,
+                           **kwargs)
+```
+
+Maps each child block in a StructBlock value.
+
+**Arguments**:
+
+  stream_block_value:
+  The value of the StructBlock, a dict of child blocks
+  block_def:
+  The definition of the StructBlock
+  block_path:
+  A '.' separated list of names of the blocks from the current block (not included) to
+  the nested block of which the value will be passed to the operation.
+  
+  Returns
+  mapped_value:
+  The value of the StructBlock after mapping all the children.
+
+<a id="wagtail_streamfield_migration_toolkit.utils.map_list_block_value"></a>
+
+#### map\_list\_block\_value
+
+```python
+def map_list_block_value(list_block_value, block_def, block_path, **kwargs)
+```
+
+Maps each child block in a ListBlock value.
+
+**Arguments**:
+
+  stream_block_value:
+  The value of the ListBlock, a list of child blocks
+  block_def:
+  The definition of the ListBlock
+  block_path:
+  A '.' separated list of names of the blocks from the current block (not included) to
+  the nested block of which the value will be passed to the operation.
+  
+  Returns
+  mapped_value:
+  The value of the ListBlock after mapping all the children.
+
+<a id="wagtail_streamfield_migration_toolkit.utils.apply_changes_to_raw_data"></a>
+
+#### apply\_changes\_to\_raw\_data
+
+```python
+def apply_changes_to_raw_data(raw_data, block_path_str, operation, streamfield,
+                              **kwargs)
+```
+
+Applies changes to raw stream data
+
+**Arguments**:
+
+  raw_data:
+  The current stream data (a list of top level blocks)
+  block_path_str:
+  A '.' separated list of names of the blocks from the top level block to the nested
+  block of which the value will be passed to the operation.
+  
+  eg:- 'simplestream.struct1' would point to,
+  [..., { type: simplestream, value: [..., { type: struct1, value: {...} }] }]
+  
+- `NOTE` - If we're directly applying changes on the top level stream block, then this will
+  be "".
+  
+- `NOTE` - When the path contains a ListBlock child, 'item' must be added to the block as
+  the name of said child.
+  
+  eg:- 'list1.item.stream1' where the list child is a StructBlock would point to,
+  [
+  ...,
+  {
+- `type` - list1,
+- `value` - [
+  {
+- `type` - item,
+- `value` - { ..., stream1: [...] }
+  },
+  ...
+  ]
+  }
+  ]
+  operation:
+  A subclass of `operations.BaseBlockOperation`. It will have the `apply` method
+  for applying changes to the matching block values.
+  streamfield:
+  The streamfield for which data is being migrated. This is used to get the definitions
+  of the blocks.
+  
+
+**Returns**:
+
+  altered_raw_data:
 
