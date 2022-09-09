@@ -75,7 +75,7 @@ class MigrateStreamData(RunPython):
         kwargs["field_name"] = self.field_name
         kwargs["operations_and_block_paths"] = self.operations_and_block_paths
         kwargs["revisions_from"] = self.revisions_from
-        kwargs["chunk_size"] = self.revisions_from
+        kwargs["chunk_size"] = self.chunk_size
 
         return (self.__class__.__qualname__, args, kwargs)
 
