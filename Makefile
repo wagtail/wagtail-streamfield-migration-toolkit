@@ -1,4 +1,4 @@
-.PHONY: help
+.PHONY: help docs
 .DEFAULT_GOAL := help
 
 help:		## ⁉️  - Display help comments for each make command
