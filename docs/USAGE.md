@@ -232,7 +232,7 @@ The following operations are available from the package for renaming and removin
 
 Note that all of these operations operate on the value of the parent block of the block which must
 be removed or renamed. Hence make sure that the block path you are passing points to the parent 
-block when using these operations.
+block when using these operations. (see the example in [basic usage](#basic-usage))
 
 ## Alter Block Structure Operations
 
@@ -303,19 +303,20 @@ instances where you need to define your own operation for mapping data. Making a
 is fairly straightforward. All you need to do is extend the `BaseBlockOperation` class and 
 define the `apply` method. 
 
-For example, if we want to do something with the value of all matching blocks,
+For example, if we want to truncate the string in a `CharBlock` to a given length,
 
 ```python
 from wagtail_streamfield_migration_toolkit.operations import BaseBlockOperation
 
 class MyBlockOperation(BaseBlockOperation):
-    def __init__(self, name):
+    def __init__(self, length):
         super().__init__()
-        self.name = name
+        # we will need to keep the length as an attribute of the operation
+        self.length = length
         
     def apply(self, block_value):
-        # do something with the block value
-        new_block_value = do_something(block_value)
+        # block value is the string value of the CharBlock
+        new_block_value = block_value[:self.length]
         return new_block_value
 
 ```
