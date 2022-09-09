@@ -1,139 +1,276 @@
-# Contents
+# Table of Contents
 
-- [Migrate Stream Data](#migrate-stream-data)
-- [Operations](#operations)
+* [wagtail\_streamfield\_migration\_toolkit.migrate\_operation](#wagtail_streamfield_migration_toolkit.migrate_operation)
+  * [MigrateStreamData](#wagtail_streamfield_migration_toolkit.migrate_operation.MigrateStreamData)
+    * [\_\_init\_\_](#wagtail_streamfield_migration_toolkit.migrate_operation.MigrateStreamData.__init__)
+* [wagtail\_streamfield\_migration\_toolkit.operations](#wagtail_streamfield_migration_toolkit.operations)
+  * [RenameStreamChildrenOperation](#wagtail_streamfield_migration_toolkit.operations.RenameStreamChildrenOperation)
+  * [RenameStructChildrenOperation](#wagtail_streamfield_migration_toolkit.operations.RenameStructChildrenOperation)
+  * [RemoveStreamChildrenOperation](#wagtail_streamfield_migration_toolkit.operations.RemoveStreamChildrenOperation)
+  * [RemoveStructChildrenOperation](#wagtail_streamfield_migration_toolkit.operations.RemoveStructChildrenOperation)
+  * [StreamChildrenToListBlockOperation](#wagtail_streamfield_migration_toolkit.operations.StreamChildrenToListBlockOperation)
+  * [StreamChildrenToStreamBlockOperation](#wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStreamBlockOperation)
+  * [AlterBlockValueOperation](#wagtail_streamfield_migration_toolkit.operations.AlterBlockValueOperation)
+  * [StreamChildrenToStructBlockOperation](#wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStructBlockOperation)
 
-# Migrate Stream Data
+<a id="wagtail_streamfield_migration_toolkit.migrate_operation"></a>
 
-`from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStreamData`
+# wagtail\_streamfield\_migration\_toolkit.migrate\_operation
 
-Subclass of RunPython for streamfield data migration operations.
+<a id="wagtail_streamfield_migration_toolkit.migrate_operation.MigrateStreamData"></a>
 
-```
-MigrateStreamData(
-    app_name,
-    model_name,
-    field_name,
-    operations_and_block_paths,
-    revisions_from=None,
-    chunk_size=1024,
-    **kwargs
-)
-```
-
-### app_name
-
-**String**. Name of the app. 
-
-### model_name
-
-**String**. Name of the model.
-
-### field_name
-
-**String**. The name of the streamfield.
-
-### operations_and_block_paths
-
-**List of tuples of (operation, block_path)**. List of operations and corresponding block paths to 
-apply.
-
-### revisions_from
-
-**Datetime | None**. Only revisions created from this date onwards will be updated. Passing `None` 
-updates all revisions. Defaults to `None`. Note that live and latest revisions will be updated 
-regardless of what value this takes.
-
-### chunk_size
-
-**Integer**. chunk size for `queryset.iterator` and `bulk_update`. Defaults to 1024.
-
-*Example*
+## MigrateStreamData Objects
 
 ```python
-# Renaming a block named `field1` to `block1`
-MigrateStreamData(
-    app_name="blog",
-    model_name="BlogPage",
-    field_name="content",
-    operations_and_block_paths=[
-        (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), ""),
-    ],
-)
+class MigrateStreamData(RunPython)
 ```
 
-# Operations
+Subclass of RunPython for streamfield data migration operations
 
-`from wagtail_streamfield_migration_toolkit import operations`
+<a id="wagtail_streamfield_migration_toolkit.migrate_operation.MigrateStreamData.__init__"></a>
 
-An Operation class contains the logic for mapping old data to new data. All Operation classes 
-should extend the `BaseBlockOperation` class.
+#### \_\_init\_\_
 
-An Operation class has an `apply` method which determines how changes are applied to the
-block/s we want to change. This method is called for the value of all blocks matching the given 
-block path. 
-
+```python
+def __init__(app_name,
+             model_name,
+             field_name,
+             operations_and_block_paths,
+             revisions_from=None,
+             chunk_size=1024,
+             **kwargs)
 ```
-    def apply(self, block_value):
+
+MigrateStreamData constructor
+
+**Arguments**:
+
+- `app_name` _str_ - Name of the app.
+- `model_name` _str_ - Name of the model.
+- `field_name` _str_ - Name of the streamfield.
+  operations_and_block_paths (:obj:`list` of :obj:`tuple` of (:obj:`operation`, :obj:`str`)):
+  List of operations and corresponding block paths to apply.
+- `revisions_from` _:obj:`datetime`, optional_ - Only revisions created from this date
+  onwards will be updated. Passing `None` updates all revisions. Defaults to `None`.
+  Note that live and latest revisions will be updated regardless of what value this
+  takes.
+- `chunk_size` _:obj:`int`, optional_ - chunk size for queryset.iterator and bulk_update.
+  Defaults to 1024.
+- `**kwargs` - atomic, elidable, hints for superclass RunPython can be given
+  
+
+**Example**:
+
+  Renaming a block named `field1` to `block1`::
+  MigrateStreamData(
+  app_name="blog",
+  model_name="BlogPage",
+  field_name="content",
+  operations_and_block_paths=[
+  (RenameStreamChildrenOperation(old_name="field1", new_name="block1"), ""),
+  ],
+  revisions_from=datetime.date(2022, 7, 25)
+  ),
+
+<a id="wagtail_streamfield_migration_toolkit.operations"></a>
+
+# wagtail\_streamfield\_migration\_toolkit.operations
+
+<a id="wagtail_streamfield_migration_toolkit.operations.RenameStreamChildrenOperation"></a>
+
+## RenameStreamChildrenOperation Objects
+
+```python
+class RenameStreamChildrenOperation(BaseBlockOperation)
 ```
 
-### block_value
+Renames all StreamBlock children of the given type
 
-The value of matching blocks is passed as an argument to the `apply` method, which is responsible 
-for applying changes to the children of the matching blocks and returning the altered values. 
-Note that **we are dealing with raw data here**, not block objects, so our values have a JSON like 
-structure, similar to what `StreamValue().raw_data` gives. 
+**Notes**:
 
-The following operations are available and can be imported from 
-`wagtail_streamfield_migration_toolkit.operations`.
+  The `block_path_str` when using this operation should point to the parent StreamBlock
+  which contains the blocks to be renamed, not the block being renamed.
+  
 
-- RenameStreamChildrenOperation  
-    #### old_name 
-    **String**. Name of the child block type to be renamed
+**Attributes**:
 
-    #### new_name 
-    **String**. New name to rename to
+- `old_name` _str_ - name of the child block type to be renamed
+- `new_name` _str_ - new name to rename to
 
-- RenameStructChildrenOperation
-    #### old_name 
-    **String**. Name of the child block type to be renamed
+<a id="wagtail_streamfield_migration_toolkit.operations.RenameStructChildrenOperation"></a>
 
-    #### new_name 
-    **String**. New name to rename to
+## RenameStructChildrenOperation Objects
 
-- RemoveStreamChildrenOperation
-    #### name 
-    **String**. Name of the child block type to be removed
+```python
+class RenameStructChildrenOperation(BaseBlockOperation)
+```
 
-- RemoveStructChildrenOperation
-    #### name 
-    **String**. Name of the child block type to be removed
+Renames all StructBlock children of the given type
 
-- StreamChildrenToListBlockOperation
-    #### block_name 
-    **String**. Name of the child block type to be combined
+**Notes**:
 
-    #### list_block_name 
-    **String**. Name of the new ListBlock type
+  The `block_path_str` when using this operation should point to the parent StructBlock
+  which contains the blocks to be renamed, not the block being renamed.
+  
 
-- StreamChildrenToStreamBlockOperation
-    #### block_names 
-    **List of String**. Names of the child block types to be combined
-    
-    #### stream_block_name 
-    **String**. Name of the new StreamBlock type
+**Attributes**:
 
-- StreamChildrenToStructBlockOperation
-    #### block_names 
-    **String**. Names of the child block types to be combined
+- `old_name` _str_ - name of the child block type to be renamed
+- `new_name` _str_ - new name to rename to
 
-    #### struct_block_name 
-    **String**. Name of the new StructBlock type
+<a id="wagtail_streamfield_migration_toolkit.operations.RemoveStreamChildrenOperation"></a>
 
-- AlterBlockValueOperation
-    #### new_value 
-    New value to change to
+## RemoveStreamChildrenOperation Objects
 
-It is possible to make your own custom operations by extending the `BaseBlockOperation` class 
-and defining the `apply` method as needed. Refer [here](USAGE.md#making-custom-operations) 
-for examples.
+```python
+class RemoveStreamChildrenOperation(BaseBlockOperation)
+```
+
+Removes all StreamBlock children of the given type
+
+**Notes**:
+
+  The `block_path_str` when using this operation should point to the parent StreamBlock
+  which contains the blocks to be removed, not the block being removed.
+  
+
+**Attributes**:
+
+- `name` _str_ - name of the child block type to be removed
+
+<a id="wagtail_streamfield_migration_toolkit.operations.RemoveStructChildrenOperation"></a>
+
+## RemoveStructChildrenOperation Objects
+
+```python
+class RemoveStructChildrenOperation(BaseBlockOperation)
+```
+
+Removes all StructBlock children of the given type
+
+**Notes**:
+
+  The `block_path_str` when using this operation should point to the parent StructBlock
+  which contains the blocks to be removed, not the block being removed.
+  
+
+**Attributes**:
+
+- `name` _str_ - name of the child block type to be removed
+
+<a id="wagtail_streamfield_migration_toolkit.operations.StreamChildrenToListBlockOperation"></a>
+
+## StreamChildrenToListBlockOperation Objects
+
+```python
+class StreamChildrenToListBlockOperation(BaseBlockOperation)
+```
+
+Combines StreamBlock children of the given type into a new ListBlock
+
+**Notes**:
+
+  The `block_path_str` when using this operation should point to the parent StreamBlock
+  which contains the blocks to be combined, not the child block itself.
+  
+
+**Attributes**:
+
+- `block_name` _str_ - name of the child block type to be combined
+- `list_block_name` _str_ - name of the new ListBlock type
+
+<a id="wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStreamBlockOperation"></a>
+
+## StreamChildrenToStreamBlockOperation Objects
+
+```python
+class StreamChildrenToStreamBlockOperation(BaseBlockOperation)
+```
+
+Combines StreamBlock children of the given types into a new StreamBlock
+
+**Notes**:
+
+  The `block_path_str` when using this operation should point to the parent StreamBlock
+  which contains the blocks to be combined, not the child block itself.
+  
+
+**Attributes**:
+
+- `block_names` _:obj:`list` of :obj:`str`_ - names of the child block types to be combined
+- `stream_block_name` _str_ - name of the new StreamBlock type
+
+<a id="wagtail_streamfield_migration_toolkit.operations.AlterBlockValueOperation"></a>
+
+## AlterBlockValueOperation Objects
+
+```python
+class AlterBlockValueOperation(BaseBlockOperation)
+```
+
+Alters the value of each block to the given value
+
+**Attributes**:
+
+  new_value : new value to change to
+
+<a id="wagtail_streamfield_migration_toolkit.operations.StreamChildrenToStructBlockOperation"></a>
+
+## StreamChildrenToStructBlockOperation Objects
+
+```python
+class StreamChildrenToStructBlockOperation(BaseBlockOperation)
+```
+
+Move each StreamBlock child of the given type inside a new StructBlock
+
+A new StructBlock will be created as a child of the parent StreamBlock for each child block of
+the given type, and then that child block will be moved from the parent StreamBlocks children
+inside the new StructBlock as a child of that StructBlock.
+
+**Example**:
+
+  Consider the following StreamField definition::
+  
+  mystream = StreamField([("char1", CharBlock()) ...], ...)
+  
+  Then the stream data would look like the following::
+  
+  [
+  ...
+  { "type": "char1", "value": "Value1", ... },
+  { "type": "char1", "value": "Value2", ... },
+  ...
+  ]
+  
+  And if we define the operation like this::
+  
+  StreamChildrenToStructBlockOperation("char1", "struct1")
+  
+  Our altered stream data would look like this::
+  
+  [
+  ...
+  { "type": "struct1", "value": { "char1": "Value1" } },
+  { "type": "struct1", "value": { "char1": "Value2" } },
+  ...
+  ]
+  
+
+**Notes**:
+
+  The `block_path_str` when using this operation should point to the parent StreamBlock
+  which contains the blocks to be combined, not the child block itself.
+  
+
+**Notes**:
+
+  Block ids are not preserved here since the new blocks are structurally different than the
+  previous blocks.
+  
+
+**Attributes**:
+
+- `block_names` _str_ - names of the child block types to be combined
+- `struct_block_name` _str_ - name of the new StructBlock type
+
