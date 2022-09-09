@@ -66,3 +66,5 @@ class Migration(migrations.Migration):
     ]
 
 ```
+
+<!-- TODO link to discussion for GSoC -->

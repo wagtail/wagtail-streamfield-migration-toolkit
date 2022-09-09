@@ -15,7 +15,9 @@
 
 # Installation Notes
 
-Note that the migration operation `MigrateStreamData` is dependent on the migrations of wagtailcore.
+- **For now we only support Wagtail 4**
+
+- Note that the migration operation `MigrateStreamData` is dependent on the migrations of wagtailcore.
 If a data migration containing `MigrateStreamData` is applied before the wagtailcore migrations have
 been applied, you may get an error. 
 
