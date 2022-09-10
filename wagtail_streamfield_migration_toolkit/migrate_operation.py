@@ -4,7 +4,6 @@ from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
 from wagtail.blocks import StreamValue
-from wagtail import VERSION as WAGTAIL_VERSION
 
 from wagtail_streamfield_migration_toolkit import utils
 
@@ -71,12 +70,15 @@ class MigrateStreamData(RunPython):
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
 
-        if WAGTAIL_VERSION < (4, 0, 0):
-            revision_query_maker = Wagtail3RevisionQueryMaker(
+        # Here we can't directly check the wagtail version, rather we need to check the wagtail
+        # version at the project state when the migration is being applied
+        try:
+            apps.get_model("wagtailcore", "Revision")
+            revision_query_maker = DefaultRevisionQueryMaker(
                 apps, model, self.revisions_from
             )
-        else:
-            revision_query_maker = DefaultRevisionQueryMaker(
+        except LookupError:
+            revision_query_maker = Wagtail3RevisionQueryMaker(
                 apps, model, self.revisions_from
             )
 
