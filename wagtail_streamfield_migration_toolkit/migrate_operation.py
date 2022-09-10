@@ -1,5 +1,6 @@
 import json
 import logging
+from functools import cached_property
 from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
@@ -142,8 +143,9 @@ class MigrateStreamData(RunPython):
                         streamfield=getattr(model, self.field_name),
                     )
                 except utils.InvalidBlockDefError as e:
-                    # TODO this check might be a problem with wagtail 3.0
-                    if revision.id not in live_and_latest_revision_ids:
+                    if not revision_query_maker.get_is_live_or_latest_revision(
+                        revision
+                    ):
                         logger.exception(
                             utils.InvalidBlockDefError(
                                 revision=revision, instance=instance
@@ -201,6 +203,9 @@ class AbstractRevisionQueryMaker:
     def bulk_update(self, data):
         self.RevisionModel.objects.bulk_update(data, ["content"])
 
+    def get_is_live_or_latest_revision(self, revision):
+        raise NotImplementedError
+
 
 class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
     """Revision Query maker to support Wagtail 3"""
@@ -245,6 +250,23 @@ class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
         # otherwise query all revisions for the page
         else:
             return Q(page_id__in=self.page_ids)
+
+    def get_is_live_or_latest_revision(self, revision):
+        if revision.id in self.instance_field_revision_ids:
+            return True
+        return revision.id in self._latest_revision_ids
+
+    @cached_property
+    def _latest_revision_ids(self):
+        latest_revision_ids = self.RevisionModel.objects.filter(
+            id__in=Subquery(
+                self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
+                .order_by("-created_at", "-id")
+                .values_list("id", flat=True)[:1]
+            ),
+            page_id__in=self.page_ids,
+        ).values_list("id", flat=True)
+        return latest_revision_ids
 
 
 class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
@@ -303,3 +325,6 @@ class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
         # otherwise query all revisions for the model
         else:
             return Q(content_type_id=contenttype_id)
+
+    def get_is_live_or_latest_revision(self, revision):
+        return revision.id in self.instance_field_revision_ids

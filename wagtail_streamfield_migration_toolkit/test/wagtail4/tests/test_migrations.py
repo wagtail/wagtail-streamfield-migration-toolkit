@@ -1,5 +1,5 @@
 from wagtail_streamfield_migration_toolkit.test.wagtail4 import models, factories
-from wagtail_streamfield_migration_toolkit.test.testutils import BaseMigrationTest
+from wagtail_streamfield_migration_toolkit.test.tests.test_migrations import BaseMigrationTest
 
 
 class TestNonPageModelWithRevisions(BaseMigrationTest):

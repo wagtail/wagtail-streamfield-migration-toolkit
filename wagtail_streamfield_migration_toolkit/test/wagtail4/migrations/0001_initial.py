@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('wagtailcore', '0076_modellogentry_revision'),
+        ('toolkit_test', '0001_initial')
     ]
 
     operations = [
