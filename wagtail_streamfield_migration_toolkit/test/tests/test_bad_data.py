@@ -89,6 +89,7 @@ class BadDataMigrationTestCase(TestCase, MigrationTestMixin):
             "invalid_name1",
         )
     ]
+    app_name = "toolkit_test"
 
     @classmethod
     def create_instance(cls):
@@ -135,7 +136,7 @@ class BadDataMigrationTestCase(TestCase, MigrationTestMixin):
         )
         cls.instance.save()
 
-        return invalid_revision
+        return invalid_revision.id, invalid_revision.created_at
 
     @classmethod
     def create_revision(cls, delta):
@@ -178,7 +179,7 @@ class TestExceptionRaisedForLatestRevision(BadDataMigrationTestCase):
         for i in range(4):
             cls.create_revision(5 - i)
 
-        cls.invalid_revision = cls.create_invalid_revision(0)
+        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(0)
 
     def test_migrate(self):
         with self.assertRaisesMessage(
@@ -186,8 +187,8 @@ class TestExceptionRaisedForLatestRevision(BadDataMigrationTestCase):
             "Invalid block def in {} object ({}) for revision id ({}) created at {}".format(
                 self.instance.__class__.__name__,
                 self.instance.id,
-                self.invalid_revision.id,
-                self.invalid_revision.created_at,
+                self.invalid_revision_id,
+                self.invalid_revision_created_at,
             ),
         ):
             self.apply_migration(revisions_from=None)
@@ -201,8 +202,8 @@ class TestExceptionRaisedForLiveRevision(BadDataMigrationTestCase):
     def setUpTestData(cls):
         cls.create_instance()
 
-        cls.invalid_revision = cls.create_invalid_revision(5)
-        cls.instance.live_revision = cls.invalid_revision
+        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
+        cls.instance.live_revision_id = cls.invalid_revision_id
         cls.instance.save()
 
         for i in range(1, 5):
@@ -214,8 +215,8 @@ class TestExceptionRaisedForLiveRevision(BadDataMigrationTestCase):
             "Invalid block def in {} object ({}) for revision id ({}) created at {}".format(
                 self.instance.__class__.__name__,
                 self.instance.id,
-                self.invalid_revision.id,
-                self.invalid_revision.created_at,
+                self.invalid_revision_id,
+                self.invalid_revision_created_at,
             ),
         ):
             self.apply_migration(revisions_from=None)
@@ -230,7 +231,7 @@ class TestExceptionIgnoredForOtherRevisions(BadDataMigrationTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.create_instance()
-        cls.invalid_revision = cls.create_invalid_revision(5)
+        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
 
         for i in range(1, 5):
             cls.create_revision(5 - i)
@@ -245,8 +246,8 @@ class TestExceptionIgnoredForOtherRevisions(BadDataMigrationTestCase):
                     migrate_operation.__name__,
                     self.instance.__class__.__name__,
                     self.instance.id,
-                    self.invalid_revision.id,
-                    self.invalid_revision.created_at,
+                    self.invalid_revision_id,
+                    self.invalid_revision_created_at,
                 ),
             )
 
