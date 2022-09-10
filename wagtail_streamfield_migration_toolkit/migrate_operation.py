@@ -1,6 +1,5 @@
 import json
 import logging
-from functools import cached_property
 from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
@@ -254,19 +253,19 @@ class Wagtail3RevisionQueryMaker(AbstractRevisionQueryMaker):
     def get_is_live_or_latest_revision(self, revision):
         if revision.id in self.instance_field_revision_ids:
             return True
-        return revision.id in self._latest_revision_ids
+        return revision.id in self.get_latest_revision_ids()
 
-    @cached_property
-    def _latest_revision_ids(self):
-        latest_revision_ids = self.RevisionModel.objects.filter(
-            id__in=Subquery(
-                self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
-                .order_by("-created_at", "-id")
-                .values_list("id", flat=True)[:1]
-            ),
-            page_id__in=self.page_ids,
-        ).values_list("id", flat=True)
-        return latest_revision_ids
+    def get_latest_revision_ids(self):
+        if not self._latest_revision_ids:
+            self._latest_revision_ids = self.RevisionModel.objects.filter(
+                id__in=Subquery(
+                    self.RevisionModel.objects.filter(page_id=OuterRef("page_id"))
+                    .order_by("-created_at", "-id")
+                    .values_list("id", flat=True)[:1]
+                ),
+                page_id__in=self.page_ids,
+            ).values_list("id", flat=True)
+        return self._latest_revision_ids
 
 
 class DefaultRevisionQueryMaker(AbstractRevisionQueryMaker):
