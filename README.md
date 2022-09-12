@@ -20,13 +20,15 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 
 This package aims to make it easier for developers using StreamField who need to write data
 migrations when making changes involving blocks/block structure in the StreamField. We expose a
-set of utilities for commonly made changes such as renaming or removing blocks, as well as utility
-functions for recursing through existing Streamfield data and applying changes, which makes it
-easier to create custom logic for applying changes too.
+custom migration operation class (`MigrateStreamData`) for migrations, which recurses through
+a streamfield to apply chosen sub-operations to all blocks matching a specific type. With it we also 
+supply a set of sub-operations to perform the most common changes, while also allowing you to
+write your own when needed.
 
 ## Why Data Migrations?
 
-A streamfield is stored as a single column of JSON data in the database, where there are blocks stored (which can be nested to form complex block structures) within the JSON representation. However, as far as django is concerned when making schema migrations, everything inside this column is just a string of JSON data and the schema doesn’t change regardless of the content/structure of the StreamField since it is the same field type before and after the change. Therefore whenever changes are made to StreamFields, any existing data must be changed into the required structure by using a data migration created manually by the user.
+A `StreamField` is stored as a single column of JSON data in the database. Blocks are stored as structures within the JSON, and can be nested. However, as far as django is concerned when making schema migrations, everything inside this column is just a string of JSON data and the schema doesn’t change regardless of the content/structure of the StreamField since it is the same field type before and after the change. Therefore whenever changes are made to StreamFields, any existing data must be changed into the required structure by using a data migration created manually by the user. If
+the data is not migrated, even a simple change like renaming a block can result in old data being lost.
 
 Generally, data migrations are done manually by making an empty migration file and writing the forward and backward functions for a RunPython command which will handle the logic for taking the previously saved JSON representation and converting it into the new JSON representation needed.
 
@@ -65,6 +67,7 @@ from wagtail_streamfield_migration_toolkit.operations import RenameStreamChildre
 class Migration(migrations.Migration):
 
     dependencies = [
+        ('wagtailcore', '0069_log_entry_jsonfield'),
         ...
     ]
 
