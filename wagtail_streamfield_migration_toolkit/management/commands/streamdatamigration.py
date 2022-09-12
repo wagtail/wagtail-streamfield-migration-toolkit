@@ -122,7 +122,7 @@ class Command(BaseCommand):
         if not self.migration_name:
             self.migration_name = "_".join(self._migration_names)[:40]
 
-        elif self.migration_name and not self.migration_name.isidentifier():
+        elif not self.migration_name.isidentifier():
             raise CommandError("The migration name must be a valid Python identifier.")
 
         autodetector = MigrationAutodetector(
