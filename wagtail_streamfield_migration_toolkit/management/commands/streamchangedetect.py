@@ -15,7 +15,8 @@ from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStrea
 
 
 class Command(BaseCommand):
-    help = "Under Construction. This just prints out some stuff"
+    help = "Autodetect StreamField changes (rename and remove) made since the last project state \
+        in migrations"
 
     def handle(self, *args, **options):
 
@@ -64,7 +65,8 @@ class Command(BaseCommand):
                 )
                 migration_operations.append(migration_operation)
 
-            # TODO migration name?
+            # TODO migration name? This would be easier to do after we add a suggest_name to our
+            # `MigrateStreamData` class
             migration = Migration("stream_data_migration", app)
             migration.operations = migration_operations
             stream_data_changes[app] = [migration]
@@ -78,7 +80,6 @@ class Command(BaseCommand):
             for migration in app_migrations:
                 writer = MigrationWriter(migration, True)
                 migration_string = writer.as_string()
-                # print(migration_string)
                 with open(writer.path, "w", encoding="utf-8") as fh:
                     fh.write(migration_string)
 
