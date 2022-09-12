@@ -11,7 +11,12 @@ from ..operations import (
 
 
 class StreamDefChangeDetector:
-    """TODO"""
+    """Compare the old and new StreamField definitions to detect changes.
+
+    For now, this can only detect rename or remove changes.
+    """
+
+    SIMILARITY_THRESHOLD = 0.5
 
     def __init__(self, old_streamblock_def, new_streamblock_def):
         self.old_streamblock_def = old_streamblock_def
@@ -54,9 +59,9 @@ class StreamDefChangeDetector:
     def find_renamed_or_removed_defs(
         self, old_block_def, new_block_def, parent_path=""
     ):
-        """TODO description
+        """Find renamed or removed blocks by recursively mapping old children to new children.
 
-        For now we do 2 things here,
+        We do 2 things here,
         1. For each old child block, try to find if there is a new child block that it will be
         mapped to. If found and requires a rename operation, keep track of that. If not found and
         requires a remove operation, keep track of that.
@@ -68,15 +73,6 @@ class StreamDefChangeDetector:
         deconstruct) and children/structure.
         """
 
-        # TODO see if we can do a bottom up approach here:
-        #   Problem with a bottom up approach is that if we don't know what parent blocks are going
-        #   to be mapped, then we can't figure out what the possible child blocks are that a given
-        #   block can map to.
-        # TODO see if there's another way to avoid recursing through child blocks in 2 separate
-        #   places (in the recursion itself and when comparing). Also see if it's even needed to
-        #   check all nested children or only the direct children would be okay.
-
-        # TODO see if you can have a get children method or something
         if hasattr(old_block_def, "child_blocks"):
             # for StreamBlocks and StructBlocks
             old_child_defs = old_block_def.child_blocks
@@ -87,7 +83,6 @@ class StreamDefChangeDetector:
             new_child_defs = {"item": new_block_def.child_block}
         else:
             # Non Structural Blocks don't have children
-            # TODO figure out if/what we need to check for these
             return
 
         # To keep track of the block path. We will need this for creating operations and keeping
@@ -123,8 +118,7 @@ class StreamDefChangeDetector:
 
                 # Find out if the block maps to one of the new only children. If it maps, that
                 # would mean that the block has been renamed
-                # TODO maybe see if we can order by a similarity score. Have comparer return the
-                # similarity score
+                # TODO see if we can order by the similarity score.
                 for new_only_child_name in new_only_child_names:
                     new_child_path = parent_path + path_suffix + new_only_child_name
                     new_child_def = new_child_defs[new_only_child_name]
@@ -132,9 +126,11 @@ class StreamDefChangeDetector:
                     # compare the blocks and find whether they are similar enough to be mapped
                     similarity_score = comparer.compare(
                         old_def=old_child_def,
+                        old_name=old_child_name,
                         new_def=new_child_def,
+                        new_name=new_only_child_name,
                     )
-                    if similarity_score >= 0.5:
+                    if similarity_score >= self.SIMILARITY_THRESHOLD:
                         # ask user whether the block was indeed renamed
                         is_renamed = self.questioner.ask_block_rename(
                             old_path=old_child_path, new_path=new_child_path
@@ -149,9 +145,7 @@ class StreamDefChangeDetector:
                                 )
                             )
                             new_only_child_names.remove(new_only_child_name)
-                            # TODO do we call the recursive func here? Would it be better if we
-                            # just maintain a mapping for this level and call the recursive funcs
-                            # in a separate iteration?
+                            # recursion call
                             self.find_renamed_or_removed_defs(
                                 old_block_def=old_child_def,
                                 new_block_def=new_child_def,
@@ -166,7 +160,7 @@ class StreamDefChangeDetector:
                     self.remove_changes.append((old_child_path, old_block_def))
 
     def generate_rename_operations(self):
-        """TODO description"""
+        """Generate the rename operations for the corresponding block paths"""
 
         for old_path, new_name, parent_def in self.rename_changes:
             old_name, rest_of_path = old_path.split(".")[-1], ".".join(
@@ -185,7 +179,7 @@ class StreamDefChangeDetector:
                 )
 
     def generate_remove_operations(self):
-        """TODO description"""
+        """Generate the remove operations for the corresponding block paths"""
 
         for old_path, parent_def in self.remove_changes:
             old_name, rest_of_path = old_path.split(".")[-1], ".".join(

@@ -5,13 +5,16 @@ from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
 class BaseBlockDefComparer:
     """Base class for all BlockDefComparers"""
 
+    # TODO Include name comparison logic here too
+    #
+
     # weights for the importance of argument similarity and direct child block similarity.
-    # NOTE: These should ALWAYS add up to one
     arg_weight = None
     child_weight = None
+    # name_weight = None # TODO
 
     @classmethod
-    def compare(cls, old_def, new_def):
+    def compare(cls, old_def, old_name, new_def, new_name):
 
         # TODO this might not be a black and white decision for all cases
         # However for cases like where old block is a StreamBlock and compared block is a CharBlock,
@@ -20,15 +23,15 @@ class BaseBlockDefComparer:
         if not cls.compare_types(old_def, new_def):
             return False
 
-        assert cls.arg_weight + cls.child_weight == 1
+        # name_similarity = cls.compare_names(old_name, new_name) # TODO
 
         arg_similarity = cls.compare_args(old_def, new_def)
-        assert arg_similarity >= 0 and arg_similarity <= 1
 
         child_similarity = cls.compare_children(old_def, new_def)
-        assert child_similarity >= 0 and child_similarity <= 1
 
-        return arg_similarity * cls.arg_weight + child_similarity * cls.child_weight
+        return (
+            arg_similarity * cls.arg_weight + child_similarity * cls.child_weight
+        ) / (cls.arg_weight + cls.child_weight)
 
     @staticmethod
     def compare_types(old_def, new_def):
@@ -44,6 +47,10 @@ class BaseBlockDefComparer:
     def compare_children(old_def, new_def):
         # returns a normalized score (0 to 1)
         raise NotImplementedError
+
+    @staticmethod
+    def compare_names(old_name, new_name):
+        return 1 if old_name == new_name else 0
 
 
 class DefaultBlockDefComparer(BaseBlockDefComparer):
@@ -82,7 +89,7 @@ class StreamBlockDefComparer(BaseBlockDefComparer):
         new_children = new_def.child_blocks
         count = 0
         for old_child_name, old_child_def in old_children.items():
-            # TODO do we use a comparer here?
+            # TODO use a comparer here?
             if old_child_name in new_children and type(
                 new_children[old_child_name]
             ) is type(old_child_def):
@@ -111,7 +118,11 @@ class StructBlockDefComparer(BaseBlockDefComparer):
         new_children = new_def.child_blocks
         count = 0
         for old_child_name, old_child_def in old_children.items():
-            # TODO do we use a comparer here?
+            # comparer = block_def_comparer_registry.get_block_def_comparer(old_child_def)
+            # score = comparer.compare()
+            # TODO using comparers: how to get mapping? do we compare all pairs and get a mapping?
+            #
+            # TODO might need to cache when using comparers here, @lru_cache
             if old_child_name in new_children and type(
                 new_children[old_child_name]
             ) is type(old_child_def):

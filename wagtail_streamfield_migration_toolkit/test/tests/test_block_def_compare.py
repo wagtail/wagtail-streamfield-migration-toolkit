@@ -38,19 +38,34 @@ class TestStructBlocks(TestCase):
         # These will need to change if we change the logic for comparison
 
         self.assertAlmostEqual(
-            StructBlockDefComparer.compare(FourFieldStruct(), ThreeFieldStruct()),
+            StructBlockDefComparer.compare(
+                old_def=FourFieldStruct(),
+                old_name="foo",
+                new_def=ThreeFieldStruct(),
+                new_name="foo",
+            ),
             3 / 4,
             delta=0.01,
         )
 
         self.assertAlmostEqual(
-            StructBlockDefComparer.compare(ThreeFieldStruct(), FourFieldStruct()),
+            StructBlockDefComparer.compare(
+                old_def=ThreeFieldStruct(),
+                old_name="foo",
+                new_def=FourFieldStruct(),
+                new_name="foo",
+            ),
             3 / 3,
             delta=0.01,
         )
 
         self.assertAlmostEqual(
-            StructBlockDefComparer.compare(ThreeFieldStruct(), DiffThreeFieldStruct()),
+            StructBlockDefComparer.compare(
+                old_def=ThreeFieldStruct(),
+                old_name="foo",
+                new_def=DiffThreeFieldStruct(),
+                new_name="foo",
+            ),
             0 / 3,
             delta=0.01,
         )
@@ -77,19 +92,34 @@ class TestStreamBlocks(TestCase):
         # These will need to change if we change the logic for comparison
 
         self.assertAlmostEqual(
-            StreamBlockDefComparer.compare(FourFieldStream(), ThreeFieldStream()),
+            StreamBlockDefComparer.compare(
+                old_def=FourFieldStream(),
+                old_name="foo",
+                new_def=ThreeFieldStream(),
+                new_name="foo",
+            ),
             3 / 4,
             delta=0.01,
         )
 
         self.assertAlmostEqual(
-            StreamBlockDefComparer.compare(ThreeFieldStream(), FourFieldStream()),
+            StreamBlockDefComparer.compare(
+                old_def=ThreeFieldStream(),
+                old_name="foo",
+                new_def=FourFieldStream(),
+                new_name="foo",
+            ),
             3 / 3,
             delta=0.01,
         )
 
         self.assertAlmostEqual(
-            StreamBlockDefComparer.compare(ThreeFieldStream(), DiffThreeFieldStream()),
+            StreamBlockDefComparer.compare(
+                old_def=ThreeFieldStream(),
+                old_name="foo",
+                new_def=DiffThreeFieldStream(),
+                new_name="foo",
+            ),
             0 / 3,
             delta=0.01,
         )
