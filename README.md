@@ -41,7 +41,7 @@ values of blocks.
 
 ## Installation
 
-- `pip install streamfield-migration-toolkit`
+- `pip install wagtail-streamfield-migration-toolkit`
 - Add `"wagtail_streamfield_migration_toolkit"` to `INSTALLED_APPS`
 
 ## Supported versions
