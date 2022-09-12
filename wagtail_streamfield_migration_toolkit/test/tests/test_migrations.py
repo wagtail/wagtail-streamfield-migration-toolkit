@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from django.db.models import JSONField, F
 from django.db.models.functions import Cast
+from wagtail import VERSION as WAGTAIL_VERSION
 
 from .. import factories, models
 from ..testutils import MigrationTestMixin
@@ -25,6 +26,7 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             "",
         )
     ]
+    app_name = None
 
     @classmethod
     def setUpTestData(cls):
@@ -145,9 +147,10 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
-                is_latest_or_live = (
-                    old_revision.id == instance.live_revision_id
-                    or old_revision.id == instance.latest_revision_id
+                is_latest_or_live = old_revision.id == instance.live_revision_id or (
+                    old_revision.id == instance.latest_revision_id
+                    if WAGTAIL_VERSION >= (4, 0, 0)
+                    else old_revision.id == instance.get_latest_revision().id
                 )
                 old_content = json.loads(old_revision.content["content"])
                 new_content = json.loads(new_revision.content["content"])
@@ -177,9 +180,10 @@ class BaseMigrationTest(TestCase, MigrationTestMixin):
             for old_revision, new_revision in zip(
                 old_revisions, instance.revisions.all().order_by("id")
             ):
-                is_latest_or_live = (
-                    old_revision.id == instance.live_revision_id
-                    or old_revision.id == instance.latest_revision_id
+                is_latest_or_live = old_revision.id == instance.live_revision_id or (
+                    old_revision.id == instance.latest_revision_id
+                    if WAGTAIL_VERSION >= (4, 0, 0)
+                    else old_revision.id == instance.get_latest_revision().id
                 )
                 is_after_revisions_from = old_revision.created_at > revisions_from
                 is_altered = is_latest_or_live or is_after_revisions_from
@@ -196,6 +200,7 @@ class TestNonPageModelWithoutRevisions(BaseMigrationTest):
     model = models.SampleModel
     factory = factories.SampleModelFactory
     has_revisions = False
+    app_name = "toolkit_test"
 
     def test_migrate_stream_data(self):
         self._test_migrate_stream_data()
@@ -205,6 +210,7 @@ class TestPage(BaseMigrationTest):
     model = models.SamplePage
     factory = factories.SamplePageFactory
     has_revisions = True
+    app_name = "toolkit_test"
 
     def test_migrate_stream_data(self):
         self._test_migrate_stream_data()
@@ -217,24 +223,3 @@ class TestPage(BaseMigrationTest):
 
     def test_migrate_revisions_from_date(self):
         self._test_migrate_revisions_from_date()
-
-
-class TestNonPageModelWithRevisions(BaseMigrationTest):
-    model = models.SampleModelWithRevisions
-    factory = factories.SampleModelWithRevisionsFactory
-    has_revisions = True
-
-    def test_migrate_stream_data(self):
-        self._test_migrate_stream_data()
-
-    def test_migrate_revisions(self):
-        self._test_migrate_revisions()
-
-    def test_always_migrate_live_and_latest_revisions(self):
-        self._test_always_migrate_live_and_latest_revisions()
-
-    def test_migrate_revisions_from_date(self):
-        self._test_migrate_revisions_from_date()
-
-
-# TODO check how this would work with wagtail 3.0

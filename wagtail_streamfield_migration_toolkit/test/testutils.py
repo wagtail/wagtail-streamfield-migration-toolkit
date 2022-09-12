@@ -9,6 +9,7 @@ from wagtail_streamfield_migration_toolkit.migrate_operation import MigrateStrea
 class MigrationTestMixin:
     model = None
     default_operation_and_block_path = []
+    app_name = None
 
     def apply_migration(
         self,
@@ -19,7 +20,7 @@ class MigrationTestMixin:
             "test_migration", "wagtail_streamfield_migration_toolkit_test"
         )
         migration_operation = MigrateStreamData(
-            app_name="wagtail_streamfield_migration_toolkit_test",
+            app_name=self.app_name,
             model_name=self.model.__name__,
             field_name="content",
             operations_and_block_paths=operations_and_block_path
