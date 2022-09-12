@@ -472,7 +472,7 @@ python manage.py streamchangedetect
 ```
 
 **NOTE** that this must be run *before* running `makemigrations` to be able to work, since it uses
-the project state created from the existing migration files for it's comparison.
+the project state created from the existing migration files for its comparison.
 
 **NOTE** that this may not always be able to recognize all changes.
 
