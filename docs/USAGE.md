@@ -15,6 +15,7 @@
   - [Old List Format](#old-list-format)
 - [Using Management Commands](#using-management-commands)
   - [streamdatamigration](#streamdatamigration)
+  - [streamchangedetect](#streamchangedetect)
 
 # Installation Notes
 
@@ -461,3 +462,41 @@ python manage.py streamdatamigration remove <app_label> <block_name> <path1> <pa
 
 where `<path>` would look like `<model_name>.<streamfield_name>....<parent_block_name>`
 
+## streamchangedetect
+
+A management command to detect changes made to streamfields from the last project state in 
+migrations (Currently limited to rename and remove operations.)
+
+```
+python manage.py streamchangedetect
+```
+
+**NOTE** that this must be run *before* running `makemigrations` to be able to work, since it uses
+the project state created from the existing migration files for its comparison.
+
+**NOTE** that this may not always be able to recognize all changes.
+
+Upon running the command, it will recursively check all StreamField block definitions and their
+children for renamed and removed blocks, and where it has sufficient reason to think that such a 
+change has occurred, will prompt the user as to whether such a rename or remove occurred. Finally,
+it will generate a migration file containing data migrations for all of the confirmed changes.
+
+The output and prompts would look like the following,
+
+```
+CHANGES FOR MODEL blogpage
+Was 'quote' renamed to 'quoted' ? [y/N] y
+Was 'quote.person' renamed to 'quote.author' ? [y/N] y
+Was 'date' renamed to 'rand_date' ? [y/N] y
+Was 'field1' renamed to 'another_char' ? [y/N] n
+Was 'field1' renamed to 'block1' ? [y/N] y
+RENAME quote.person TO author
+RENAME quote TO quoted
+RENAME field1 TO block1
+RENAME date TO rand_date
+
+CHANGES FOR MODEL foopage
+Was 'char1' renamed to 'renamed1' ? [y/N] n
+Was 'char1' removed? [y/N] y
+REMOVE char1
+```
