@@ -37,7 +37,7 @@ class Command(BaseCommand):
             "paths",
             nargs="+",
             action="extend",
-            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>' \
+            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>[.<block_path>]' \
                 Note that for rename operations the block being operated on is the parent of the block being \
                 renamed.",
         )
@@ -51,7 +51,7 @@ class Command(BaseCommand):
             "paths",
             nargs="+",
             action="extend",
-            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>.?<block_path>' \
+            help="path/s to the block/s which is being operated on: '<model_name>.<field_name>[.<block_path>]' \
                 Note that for remove operations the block being operated on is the parent of the block being \
                 removed.",
         )
