@@ -13,6 +13,8 @@
   - [block_value](#blockvalue)
   - [Making Structural Changes](#making-structural-changes)
   - [Old List Format](#old-list-format)
+- [Using Management Commands](#using-management-commands)
+  - [streamdatamigration](#streamdatamigration)
 
 # Installation Notes
 
@@ -424,3 +426,38 @@ in the new format like so,
         for child_block in formatted_list_child_generator(list_block_value):
             ...
 ```
+
+# Using Management Commands
+
+## streamdatamigration
+
+A management command to generate data migrations for a given operation and multiple block paths.
+(Currently limited to a single app at a time.) For help,
+
+```
+python manage.py streamdatamigration --help
+```
+
+or help for specific operations,
+
+```
+python manage.py streamdatamigration <operation> --help
+```
+Currently this only supports rename and remove operations.
+
+A rename operation for a block used in multiple streamfields in an app would look like this,
+
+```
+python manage.py streamdatamigration rename <app_label> <old_name> <new_name> <path1> <path2> <path3> ...
+```
+
+where `<path>` would look like `<model_name>.<streamfield_name>....<parent_block_name>`
+
+A remove operation for a block used in multiple streamfields in an app would look like this,
+
+```
+python manage.py streamdatamigration remove <app_label> <block_name> <path1> <path2> <path3> ...
+```
+
+where `<path>` would look like `<model_name>.<streamfield_name>....<parent_block_name>`
+

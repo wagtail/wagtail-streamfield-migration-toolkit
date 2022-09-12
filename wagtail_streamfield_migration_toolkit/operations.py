@@ -1,4 +1,5 @@
 from wagtail_streamfield_migration_toolkit.utils import formatted_list_child_generator
+from django.utils.deconstruct import deconstructible
 
 
 class BaseBlockOperation:
@@ -9,6 +10,7 @@ class BaseBlockOperation:
         raise NotImplementedError
 
 
+@deconstructible
 class RenameStreamChildrenOperation(BaseBlockOperation):
     """Renames all StreamBlock children of the given type
 
@@ -36,6 +38,7 @@ class RenameStreamChildrenOperation(BaseBlockOperation):
         return mapped_block_value
 
 
+@deconstructible
 class RenameStructChildrenOperation(BaseBlockOperation):
     """Renames all StructBlock children of the given type
 
@@ -63,6 +66,7 @@ class RenameStructChildrenOperation(BaseBlockOperation):
         return mapped_block_value
 
 
+@deconstructible
 class RemoveStreamChildrenOperation(BaseBlockOperation):
     """Removes all StreamBlock children of the given type
 
@@ -86,6 +90,7 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
         ]
 
 
+@deconstructible
 class RemoveStructChildrenOperation(BaseBlockOperation):
     """Removes all StructBlock children of the given type
 
