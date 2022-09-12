@@ -78,6 +78,8 @@ class Command(BaseCommand):
             for migration in app_migrations:
                 writer = MigrationWriter(migration, True)
                 migration_string = writer.as_string()
-                print(migration_string)
+                # print(migration_string)
+                with open(writer.path, "w", encoding="utf-8") as fh:
+                    fh.write(migration_string)
 
         self.stdout.write(self.style.SUCCESS("Le end"))
