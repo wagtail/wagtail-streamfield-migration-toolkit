@@ -54,9 +54,20 @@ values of blocks.
 
 ## Quick Usage
 
-Assume we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child
-streamblock named `mystream` which has a child char block named `field1` which we want to rename to
-`block1`.
+
+
+Assume we have a model `BlogPage` in app `blog`, defined as follows:
+
+```python
+class BlogPage(Page):
+    content = StreamField([
+        ("stream1", blocks.StreamBlock([
+            ("field1", blocks.CharBlock())
+        ])),
+    ])
+```
+
+If we want to rename `field1` to `block1`, we would use the following migration,
 
 ```python
 from django.db import migrations
@@ -67,7 +78,7 @@ from wagtail_streamfield_migration_toolkit.operations import RenameStreamChildre
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('wagtailcore', '0069_log_entry_jsonfield'),
+        ('wagtailcore', '0076_modellogentry_revision'),
         ...
     ]
 

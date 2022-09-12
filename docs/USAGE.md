@@ -25,11 +25,21 @@ required migration is 0070_rename_pagerevision_revision.py)
 
 # Basic Usage
 
-Assume we have a model `BlogPage` in app `blog` which has a streamfield `content` with a child 
-streamblock named `mystream` which has a child char block named `field1` which we want to rename to 
-`block1`. Now even though we change the name to `block1` in our streamfield definitions, the actual 
-data in the database does not reflect that. To update that data, we need to create a data migration 
-which will update the data in the database to also have `block1` instead of `field1`.
+Assume we have a model `BlogPage` in app `blog`, defined as follows:
+
+```python
+class BlogPage(Page):
+    content = StreamField([
+        ("stream1", blocks.StreamBlock([
+            ("field1", blocks.CharBlock())
+        ])),
+    ])
+```
+
+If we want to rename `field1` to `block1`, even though we change the name to `block1` in our 
+streamfield definitions, the actual data in the database does not reflect that. To update that data, 
+we need to create a data migration which will update the data in the database to also have `block1` 
+instead of `field1`.
 
 First we create an empty migration file within the app. We can use django's `makemigrations` for 
 this,
@@ -51,6 +61,17 @@ class Migration(migrations.Migration):
     dependencies = [...]
 
     operations = [
+    ]
+```
+
+We need to make sure that either this migration or one of the migrations it depends upon has the
+wagtail core migrations as a dependency, since the package needs the migrations for the `Revision`
+models to be able to run.
+
+```python
+    dependencies = [
+        ('wagtailcore', '0076_modellogentry_revision'),
+        ...
     ]
 ```
 
@@ -326,7 +347,8 @@ class MyBlockOperation(BaseBlockOperation):
 Note that depending on the type of block we're dealing with, the `block_value` which is passed to
 `apply` may take different structures.
 
-For non structural blocks, the value of the block will be passed directly.
+For non structural blocks, the value of the block will be passed directly. For example, if we're
+dealing with a `CharBlock`, it will be a string value.
 
 The value passed to `apply` when the matched block is a StreamBlock would look like this,
 
