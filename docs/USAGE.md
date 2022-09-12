@@ -15,6 +15,7 @@
   - [Old List Format](#old-list-format)
 - [Using Management Commands](#using-management-commands)
   - [streamdatamigration](#streamdatamigration)
+  - [streamchangedetect](#streamchangedetect)
 
 # Installation Notes
 
@@ -461,3 +462,13 @@ python manage.py streamdatamigration remove <app_label> <block_name> <path1> <pa
 
 where `<path>` would look like `<model_name>.<streamfield_name>....<parent_block_name>`
 
+## streamchangedetect
+
+A management command to detect changes made to streamfields from the last project state in 
+migrations (Currently limited to rename and remove operations.)
+
+```
+python manage.py streamchangedetect
+```
+
+**NOTE** that this may not always be able to recognize all changes.
