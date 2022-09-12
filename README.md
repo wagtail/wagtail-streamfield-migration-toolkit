@@ -50,11 +50,9 @@ values of blocks.
 
 - Python 3.7, 3.8, 3.9
 - Django 3.2, 4.0
-- Wagtail 4.0
+- Wagtail 3.0, 4.0
 
 ## Quick Usage
-
-
 
 Assume we have a model `BlogPage` in app `blog`, defined as follows:
 
@@ -78,7 +76,7 @@ from wagtail_streamfield_migration_toolkit.operations import RenameStreamChildre
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('wagtailcore', '0076_modellogentry_revision'),
+        ('wagtailcore', '0069_log_entry_jsonfield'),
         ...
     ]
 

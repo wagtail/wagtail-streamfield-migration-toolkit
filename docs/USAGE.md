@@ -16,8 +16,6 @@
 
 # Installation Notes
 
-- **For now we only support Wagtail 4**
-
 - Note that the migration operation `MigrateStreamData` is dependent on the migrations of wagtailcore.
 If a data migration containing `MigrateStreamData` is applied before the wagtailcore migrations have
 been applied, you may get an error. (This may happen in wagtail 4 projects, and the
@@ -70,10 +68,12 @@ models to be able to run.
 
 ```python
     dependencies = [
-        ('wagtailcore', '0076_modellogentry_revision'),
+        ('wagtailcore', '0069_log_entry_jsonfield'),
         ...
     ]
 ```
+
+(if the project started off with Wagtail 4, '0076_modellogentry_revision' would also be fine)
 
 Next we need a migration operation which django will run to make our changes. If we weren't using
 this package we would use a `migrations.RunPython` operation, and we would define what data 
