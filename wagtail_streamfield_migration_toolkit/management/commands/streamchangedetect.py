@@ -83,4 +83,4 @@ class Command(BaseCommand):
                 with open(writer.path, "w", encoding="utf-8") as fh:
                     fh.write(migration_string)
 
-        self.stdout.write(self.style.SUCCESS("Le end"))
+        self.stdout.write(self.style.SUCCESS("Successfully wrote migration file/s"))

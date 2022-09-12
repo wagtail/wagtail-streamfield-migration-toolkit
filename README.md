@@ -11,6 +11,7 @@ a set of reusable utilities to allow Wagtail implementors to easily generate dat
 
 - [Introduction](#introduction)
   - [Why data migrations?](#why-data-migrations)
+  - [Features](#features)
 - [Quick Start](#quick-start)
 - [Reference](docs/REFERENCE.md)
 - [Usage](docs/USAGE.md)
@@ -38,6 +39,12 @@ This package would make it easier to write data migrations for streamfield chang
 to recurse through various streamdata structures and map changes, in addition to having several "operations"
 which also handle the logic for altering the data for common use cases like renaming, removing and altering
 values of blocks.
+
+## Features
+
+- `MigrateStreamData` class which handles logic for recursing through streamfield structures, applying changes and saving for both instances and revisions.
+- Set of sub operations for common use cases like renaming or removing blocks, altering block values, moving a block inside a new `StructBlock` etc.
+- [Autodetect](docs/USAGE.md#streamchangedetect) changes (limited)
 
 # Quick Start
 
