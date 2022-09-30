@@ -5,13 +5,10 @@ from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
 class BaseBlockDefComparer:
     """Base class for all BlockDefComparers"""
 
-    # TODO Include name comparison logic here too
-    #
-
     # weights for the importance of argument similarity and direct child block similarity.
     arg_weight = None
     child_weight = None
-    # name_weight = None # TODO
+    name_weight = None
 
     @classmethod
     def compare(cls, old_def, old_name, new_def, new_name):
@@ -23,15 +20,17 @@ class BaseBlockDefComparer:
         if not cls.compare_types(old_def, new_def):
             return False
 
-        # name_similarity = cls.compare_names(old_name, new_name) # TODO
+        name_similarity = cls.compare_names(old_name, new_name)
 
         arg_similarity = cls.compare_args(old_def, new_def)
 
         child_similarity = cls.compare_children(old_def, new_def)
 
         return (
-            arg_similarity * cls.arg_weight + child_similarity * cls.child_weight
-        ) / (cls.arg_weight + cls.child_weight)
+            arg_similarity * cls.arg_weight
+            + child_similarity * cls.child_weight
+            + name_similarity * cls.name_weight
+        ) / (cls.arg_weight + cls.child_weight + cls.name_weight)
 
     @staticmethod
     def compare_types(old_def, new_def):
@@ -50,6 +49,7 @@ class BaseBlockDefComparer:
 
     @staticmethod
     def compare_names(old_name, new_name):
+        # returns a normalized score (0 to 1)
         return 1 if old_name == new_name else 0
 
 
@@ -58,6 +58,7 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
 
     arg_weight = 0.5
     child_weight = 0.5
+    name_weight = 1
 
     @staticmethod
     def compare_args(old_def, new_def):
@@ -71,9 +72,9 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
 class StreamBlockDefComparer(BaseBlockDefComparer):
     """Comparer for StreamBlocks"""
 
-    # a weight for args and children
     arg_weight = 0
-    child_weight = 1
+    child_weight = 2
+    name_weight = 1
 
     @staticmethod
     def compare_types(old_def, new_def):
@@ -102,7 +103,8 @@ class StructBlockDefComparer(BaseBlockDefComparer):
     """Comparer for StructBlocks"""
 
     arg_weight = 0
-    child_weight = 1
+    child_weight = 2
+    name_weight = 1
 
     @staticmethod
     def compare_types(old_def, new_def):
@@ -136,6 +138,7 @@ class ListBlockDefComparer(BaseBlockDefComparer):
 
     arg_weight = 0
     child_weight = 1
+    name_weight = 1
 
     @staticmethod
     def compare_types(old_def, new_def):
