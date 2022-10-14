@@ -42,6 +42,8 @@ class BaseBlockDefComparer:
         arg_similarity = cls.compare_args(old_args, new_args)
         kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
 
+        # breakpoint()
+
         return (
             arg_similarity * cls.arg_weight
             + name_similarity * cls.name_weight
@@ -168,7 +170,6 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
         # returns a score between 0 and 1
 
         child_score_sum = 0
-        #  TODO  deconstruct
         new_children_by_name = {
             new_child_name: new_child_tuple
             for new_child_name, new_child_tuple in new_children
@@ -208,9 +209,9 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
 class DefaultBlockDefComparer(BaseBlockDefComparer):
     """Default used when no other comparer is available"""
 
-    arg_weight = 0.1
-    name_weight = 1
-    kwarg_weight = 0.1
+    arg_weight = 1
+    name_weight = 2
+    kwarg_weight = 1
 
     @classmethod
     def compare_args(cls, old_args, new_args):
