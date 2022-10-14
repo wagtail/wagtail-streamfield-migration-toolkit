@@ -51,8 +51,8 @@ class BaseBlockDefComparer:
     @classmethod
     def compare(cls, old_def, old_name, new_def, new_name):
 
-        # TODO is it better to do a type comparison here too? In that case we might be able to
-        # avoid having to do the deep deconstruct
+        if not cls.compare_types_initial(old_def, new_def):
+            return 0
 
         # TODO it might be best to add some separate tests for the hashable_deep_deconstruct method
         # itself
@@ -77,6 +77,12 @@ class BaseBlockDefComparer:
             new_args=new_args,
             new_kwargs=new_kwargs,
         )
+
+    @staticmethod
+    def compare_types_initial(old_def, new_def):
+        old_path, _, _ = old_def.deconstruct()
+        new_path, _, _ = new_def.deconstruct()
+        return old_path == new_path
 
     @staticmethod
     def compare_types(old_path, new_path):
@@ -111,10 +117,14 @@ class BaseBlockDefComparer:
         # returns a normalized score (0 to 1)
         return 1 if old_name == new_name else 0
 
-    # TODO if we've already deconstructed, get result from last time
-    # possibly caching by having an attribute on the object
     @classmethod
     def hashable_deep_deconstruct(cls, obj):
+        # TODO check if this is a good idea?
+        # if we've already computed this for a block, keep that as an attribute on the block
+        # and return it. Note that this would be done only for blocks.
+        if hasattr(obj, 'hashable_deep_deconstructed'):
+            return getattr(obj, 'hashable_deep_deconstructed')
+
         if isinstance(obj, list):
             return tuple(cls.hashable_deep_deconstruct(value) for value in obj)
         elif isinstance(obj, tuple):
@@ -128,14 +138,15 @@ class BaseBlockDefComparer:
             return obj
         elif hasattr(obj, "deconstruct"):
             path, args, kwargs = obj.deconstruct()
-            return (
+            setattr(obj, 'hashable_deep_deconstructed', (
                 path,
                 tuple(cls.hashable_deep_deconstruct(value) for value in args),
                 tuple(
                     (key, cls.hashable_deep_deconstruct(value))
                     for key, value in kwargs.items()
                 ),
-            )
+            ))
+            return getattr(obj, 'hashable_deep_deconstructed')
         else:
             return obj
 
@@ -204,7 +215,7 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
     @classmethod
     def compare_args(cls, old_args, new_args):
         # If the old def had no args, then return 1
-        # TODO do we need to get a difference between the args instead?
+        # TODO do we need to get a difference between the args instead? Refer `compare_kwargs` method
         if len(old_args) == 0:
             return 1
 
