@@ -15,6 +15,7 @@ class BaseBlockDefComparer:
     # weights for the importance of argument similarity and name similarity
     arg_weight = None
     name_weight = None
+    kwarg_weight = None
 
     @classmethod
     @lru_cache
@@ -38,12 +39,14 @@ class BaseBlockDefComparer:
             return 0
 
         name_similarity = cls.compare_names(old_name, new_name)
+        arg_similarity = cls.compare_args(old_args, new_args)
+        kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
 
-        arg_similarity = cls.compare_args(old_args, old_kwargs, new_args, new_kwargs)
-
-        return (arg_similarity * cls.arg_weight + name_similarity * cls.name_weight) / (
-            cls.arg_weight + cls.name_weight
-        )
+        return (
+            arg_similarity * cls.arg_weight
+            + name_similarity * cls.name_weight
+            + kwarg_similarity * cls.kwarg_weight
+        ) / (cls.arg_weight + cls.name_weight + cls.kwarg_weight)
 
     @classmethod
     def compare(cls, old_def, old_name, new_def, new_name):
@@ -81,9 +84,27 @@ class BaseBlockDefComparer:
         return old_path == new_path
 
     @classmethod
-    def compare_args(cls, old_args, old_kwargs, new_args, new_kwargs):
+    def compare_args(cls, old_args, new_args):
         # returns a normalized score (0 to 1)
         raise NotImplementedError
+
+    @classmethod
+    def compare_kwargs(cls, old_kwargs, new_kwargs):
+        # returns a score between 0 and 1
+
+        # TODO consider also default kwargs - see how much work this entails
+        # TODO consider all changes: both additions and removals
+
+        if len(old_kwargs) == 0:
+            return 1
+
+        kwarg_score = 0
+        new_kwargs_dict = {kwarg: value for kwarg, value in new_kwargs}
+        for kwarg, value in old_kwargs:
+            if kwarg in new_kwargs_dict and new_kwargs_dict[kwarg] == value:
+                kwarg_score += 1
+
+        return kwarg_score / len(old_kwargs)
 
     @staticmethod
     def compare_names(old_name, new_name):
@@ -125,39 +146,11 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
     # `compare_children` to compare the children recursively
     # `compare_kwargs` to compare other block options like label etc.
 
-    child_weight = None
-    kwarg_weight = None
-
     @classmethod
-    def compare_args(cls, old_args, old_kwargs, new_args, new_kwargs):
-
+    def compare_args(cls, old_args, new_args):
         old_children = old_args[0]
         new_children = new_args[0]
-
-        kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
-        child_similarity = cls.compare_children(old_children, new_children)
-
-        return (
-            kwarg_similarity * cls.kwarg_weight + child_similarity * cls.child_weight
-        ) / (cls.kwarg_weight + cls.child_weight)
-
-    @staticmethod
-    def compare_kwargs(old_kwargs, new_kwargs):
-        # returns a score between 0 and 1
-        # TODO consider also default kwargs - see how much work this entails
-        # TODO consider all changes: both additions and removals
-        # TODO move to base class
-
-        if len(old_kwargs) == 0:
-            return 1
-
-        kwarg_score = 0
-        new_kwargs_dict = {kwarg: value for kwarg, value in new_kwargs}
-        for kwarg, value in old_kwargs:
-            if kwarg in new_kwargs_dict and new_kwargs_dict[kwarg] == value:
-                kwarg_score += 1
-
-        return kwarg_score / len(old_kwargs)
+        return cls.compare_children(old_children, new_children)
 
     @staticmethod
     def compare_children(old_children, new_children):
@@ -165,7 +158,10 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
 
         child_score_sum = 0
         #  TODO  deconstruct
-        new_children_by_name = {child[0]: child[1] for child in new_children}
+        new_children_by_name = {
+            new_child_name: new_child_tuple
+            for new_child_name, new_child_tuple in new_children
+        }
         for old_child_name, (
             old_child_path,
             old_child_args,
@@ -203,12 +199,13 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
 
     arg_weight = 0.1
     name_weight = 1
+    kwarg_weight = 0.1
 
     @classmethod
-    def compare_args(cls, old_args, old_kwargs, new_args, new_kwargs):
+    def compare_args(cls, old_args, new_args):
         # If the old def had no args, then return 1
         # TODO do we need to get a difference between the args instead?
-        if len(old_args) + len(old_kwargs) == 0:
+        if len(old_args) == 0:
             return 1
 
         arg_score = 0
@@ -216,11 +213,7 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
             if arg in new_args:
                 arg_score += 1
 
-        new_kwargs_dict = {kwarg: value for kwarg, value in new_kwargs}
-        for kwarg, value in old_kwargs:
-            if kwarg in new_kwargs and new_kwargs_dict[kwarg] == value:
-                arg_score += 1
-        return arg_score / (len(old_args) + len(old_kwargs))
+        return arg_score / len(old_args)
 
 
 class StreamBlockDefComparer(StructuralBlockDefComparer):
@@ -228,8 +221,6 @@ class StreamBlockDefComparer(StructuralBlockDefComparer):
 
     name_weight = 1
     arg_weight = 1
-
-    child_weight = 1
     kwarg_weight = 0.1
 
 
@@ -238,8 +229,6 @@ class StructBlockDefComparer(StructuralBlockDefComparer):
 
     name_weight = 1
     arg_weight = 1
-
-    child_weight = 1
     kwarg_weight = 0.1
 
 
@@ -248,8 +237,6 @@ class ListBlockDefComparer(StructuralBlockDefComparer):
 
     name_weight = 1
     arg_weight = 1
-
-    child_weight = 1
     kwarg_weight = 0.1
 
     @staticmethod
