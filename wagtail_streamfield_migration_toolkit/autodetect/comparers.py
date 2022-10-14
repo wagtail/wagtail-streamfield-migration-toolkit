@@ -1,6 +1,12 @@
+import importlib
+from functools import lru_cache
 from wagtail import hooks
 from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
-from functools import lru_cache
+
+
+def import_klass(path):
+    module_path, klass_name = ".".join(path.split(".")[:-1]), path.split(".")[-1]
+    return getattr(importlib.import_module(module_path), klass_name)
 
 
 class BaseBlockDefComparer:
@@ -165,17 +171,16 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
             old_child_args,
             old_child_kwargs,
         ) in old_children:
+            old_child_def = import_klass(old_child_path)
+            comparer: BaseBlockDefComparer = (
+                block_def_comparer_registry.get_block_def_comparer(old_child_def)
+            )
             # TODO do a process similar to what we do outside, where we rank blocks and pick one
             # to map to.
             # TODO problem: what if we map one block, but then there would be another block which
             # we come across afterwards that would have better mapped to it? Also if we're unsure,
             # do we simply leave blocks unmapped altogether?
             if old_child_name in new_children_by_name:
-                comparer: BaseBlockDefComparer = (
-                    block_def_comparer_registry.get_block_def_comparer_by_path(
-                        old_child_path
-                    )
-                )
                 new_child_path, new_child_args, new_child_kwargs = new_children_by_name[
                     old_child_name
                 ]
@@ -254,8 +259,9 @@ class ListBlockDefComparer(StructuralBlockDefComparer):
         old_child_path, old_child_args, old_child_kwargs = old_child
         new_child_path, new_child_args, new_child_kwargs = new_child
 
+        old_child_def = import_klass(old_child_path)
         comparer: BaseBlockDefComparer = (
-            block_def_comparer_registry.get_block_def_comparer_by_path(old_child_path)
+            block_def_comparer_registry.get_block_def_comparer(old_child_def)
         )
         # Because list children don't have a given name, we're passing None for now. Alternatively,
         # we could consider passing 'item' as the name since that is how it is saved in the json.
@@ -279,14 +285,6 @@ class BlockDefComparerRegistry:
         StructBlock: StructBlockDefComparer,
     }
 
-    # TODO do we register this too ?
-    BASE_COMPARERS_BY_BLOCK_PATH = {
-        "default": DefaultBlockDefComparer,
-        "wagtail.blocks.StreamBlock": StreamBlockDefComparer,
-        "wagtail.blocks.StructBlock": StructBlockDefComparer,
-        "wagtail.blocks.ListBlock": ListBlockDefComparer,
-    }
-
     def __init__(self):
         self._scanned_for_comparers = False
         self.comparers_by_block_type = {}
@@ -306,20 +304,11 @@ class BlockDefComparerRegistry:
         if not self._scanned_for_comparers:
             self._scan_for_comparers()
 
-        for block_class in type(block_def).__mro__:
+        klass = block_def if isinstance(block_def, type) else type(block_def)
+
+        for block_class in klass.__mro__:
             if block_class in self.comparers_by_block_type:
                 return self.comparers_by_block_type[block_class]
-
-    # TODO try importing the class from the path instead of this
-    @lru_cache
-    def get_block_def_comparer_by_path(self, path):
-        if not self._scanned_for_comparers:
-            self._scan_for_comparers()
-
-        if path in self.BASE_COMPARERS_BY_BLOCK_PATH:
-            return self.BASE_COMPARERS_BY_BLOCK_PATH[path]
-        else:
-            return self.BASE_COMPARERS_BY_BLOCK_PATH["default"]
 
 
 block_def_comparer_registry = BlockDefComparerRegistry()
