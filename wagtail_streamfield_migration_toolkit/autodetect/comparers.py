@@ -4,6 +4,7 @@ from wagtail import hooks
 from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
 
 
+@lru_cache()
 def import_klass(path):
     module_path, klass_name = ".".join(path.split(".")[:-1]), path.split(".")[-1]
     return getattr(importlib.import_module(module_path), klass_name)
@@ -18,7 +19,7 @@ class BaseBlockDefComparer:
     kwarg_weight = None
 
     @classmethod
-    @lru_cache
+    @lru_cache()
     def _compare(
         cls,
         old_name,
@@ -124,8 +125,8 @@ class BaseBlockDefComparer:
         # TODO check if this is a good idea?
         # if we've already computed this for a block, keep that as an attribute on the block
         # and return it. Note that this would be done only for blocks.
-        if hasattr(obj, 'hashable_deep_deconstructed'):
-            return getattr(obj, 'hashable_deep_deconstructed')
+        if hasattr(obj, "_hashable_deep_deconstructed"):
+            return getattr(obj, "_hashable_deep_deconstructed")
 
         if isinstance(obj, list):
             return tuple(cls.hashable_deep_deconstruct(value) for value in obj)
@@ -140,34 +141,29 @@ class BaseBlockDefComparer:
             return obj
         elif hasattr(obj, "deconstruct"):
             path, args, kwargs = obj.deconstruct()
-            setattr(obj, 'hashable_deep_deconstructed', (
-                path,
-                tuple(cls.hashable_deep_deconstruct(value) for value in args),
-                tuple(
-                    (key, cls.hashable_deep_deconstruct(value))
-                    for key, value in kwargs.items()
+            setattr(
+                obj,
+                "_hashable_deep_deconstructed",
+                (
+                    path,
+                    tuple(cls.hashable_deep_deconstruct(value) for value in args),
+                    tuple(
+                        (key, cls.hashable_deep_deconstruct(value))
+                        for key, value in kwargs.items()
+                    ),
                 ),
-            ))
-            return getattr(obj, 'hashable_deep_deconstructed')
+            )
+            return getattr(obj, "_hashable_deep_deconstructed")
         else:
             return obj
 
 
 class StructuralBlockDefComparer(BaseBlockDefComparer):
-    # Defines `compare_args` method for blocks containing children, i.e., list, stream and struct
-    # blocks. This will in turn call 2 methods,
-    # `compare_children` to compare the children recursively
-    # `compare_kwargs` to compare other block options like label etc.
+    # For structural blocks, i.e., Stream, Struct and List Blocks.
 
     @classmethod
     def compare_args(cls, old_args, new_args):
-        old_children = old_args[0]
-        new_children = new_args[0]
-        return cls.compare_children(old_children, new_children)
-
-    @staticmethod
-    def compare_children(old_children, new_children):
-        # returns a score between 0 and 1
+        old_children, new_children = cls.get_children(old_args, new_args)
 
         child_score_sum = 0
         new_children_by_name = {
@@ -205,6 +201,10 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
 
         return child_score_sum / len(old_children)
 
+    @staticmethod
+    def get_children(old_args, new_args):
+        raise NotImplementedError
+
 
 class DefaultBlockDefComparer(BaseBlockDefComparer):
     """Default used when no other comparer is available"""
@@ -235,6 +235,10 @@ class StreamBlockDefComparer(StructuralBlockDefComparer):
     arg_weight = 1
     kwarg_weight = 0.1
 
+    @staticmethod
+    def get_children(old_args, new_args):
+        return old_args[0], new_args[0]
+
 
 class StructBlockDefComparer(StructuralBlockDefComparer):
     """Comparer for StructBlocks"""
@@ -242,6 +246,10 @@ class StructBlockDefComparer(StructuralBlockDefComparer):
     name_weight = 1
     arg_weight = 1
     kwarg_weight = 0.1
+
+    @staticmethod
+    def get_children(old_args, new_args):
+        return old_args[0], new_args[0]
 
 
 class ListBlockDefComparer(StructuralBlockDefComparer):
@@ -252,28 +260,10 @@ class ListBlockDefComparer(StructuralBlockDefComparer):
     kwarg_weight = 0.1
 
     @staticmethod
-    def compare_children(old_child, new_child):
-        # ListBlocks have only one child, and it does not have a name in the deconstructed tuple
-
-        old_child_path, old_child_args, old_child_kwargs = old_child
-        new_child_path, new_child_args, new_child_kwargs = new_child
-
-        old_child_def = import_klass(old_child_path)
-        comparer: BaseBlockDefComparer = (
-            block_def_comparer_registry.get_block_def_comparer(old_child_def)
-        )
-        # Because list children don't have a given name, we're passing None for now. Alternatively,
-        # we could consider passing 'item' as the name since that is how it is saved in the json.
-        return comparer._compare(
-            old_name=None,
-            old_path=old_child_path,
-            old_args=old_child_args,
-            old_kwargs=old_child_kwargs,
-            new_name=None,
-            new_path=new_child_path,
-            new_args=new_child_args,
-            new_kwargs=new_child_kwargs,
-        )
+    def get_children(old_args, new_args):
+        old_children = [(None, old_args[0])]
+        new_children = [(None, new_args[0])]
+        return old_children, new_children
 
 
 class BlockDefComparerRegistry:
@@ -297,6 +287,8 @@ class BlockDefComparerRegistry:
         self.comparers_by_block_type = comparers
         self._scanned_for_comparers = True
 
+    # TODO 2 different methods for classes and instances
+    # TODO take a look at variable naming
     def get_block_def_comparer(self, block_def):
         # find the comparer class for the most specific class in the block's inheritance tree
 
