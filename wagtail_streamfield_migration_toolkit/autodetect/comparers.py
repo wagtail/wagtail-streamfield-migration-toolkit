@@ -177,7 +177,7 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
         ) in old_children:
             old_child_def = import_klass(old_child_path)
             comparer: BaseBlockDefComparer = (
-                block_def_comparer_registry.get_block_def_comparer(old_child_def)
+                block_def_comparer_registry.get_block_def_comparer_for_class(old_child_def)
             )
             # TODO do a process similar to what we do outside, where we rank blocks and pick one
             # to map to.
@@ -287,17 +287,23 @@ class BlockDefComparerRegistry:
         self.comparers_by_block_type = comparers
         self._scanned_for_comparers = True
 
-    # TODO 2 different methods for classes and instances
-    # TODO take a look at variable naming
-    def get_block_def_comparer(self, block_def):
+    def get_block_def_comparer_for_instance(self, block_def):
         # find the comparer class for the most specific class in the block's inheritance tree
 
         if not self._scanned_for_comparers:
             self._scan_for_comparers()
 
-        klass = block_def if isinstance(block_def, type) else type(block_def)
+        for block_class in type(block_def).__mro__:
+            if block_class in self.comparers_by_block_type:
+                return self.comparers_by_block_type[block_class]
 
-        for block_class in klass.__mro__:
+    def get_block_def_comparer_for_class(self, block_class):
+        # find the comparer class for the most specific class in the block's inheritance tree
+
+        if not self._scanned_for_comparers:
+            self._scan_for_comparers()
+
+        for block_class in block_class.__mro__:
             if block_class in self.comparers_by_block_type:
                 return self.comparers_by_block_type[block_class]
 

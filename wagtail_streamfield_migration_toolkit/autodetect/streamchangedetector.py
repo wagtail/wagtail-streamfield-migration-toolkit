@@ -113,8 +113,10 @@ class StreamDefChangeDetector:
                 # TODO common sense check
 
             else:
-                comparer = block_def_comparer_registry.get_block_def_comparer(
-                    old_child_def
+                comparer = (
+                    block_def_comparer_registry.get_block_def_comparer_for_instance(
+                        old_child_def
+                    )
                 )
 
                 # Find out if the block maps to one of the new only children. If it maps, that
@@ -134,12 +136,18 @@ class StreamDefChangeDetector:
                         new_name=new_only_child_name,
                     )
                     if similarity_score >= self.SIMILARITY_THRESHOLD:
-                        blocks_by_score.append((similarity_score, new_only_child_name, new_child_path))
+                        blocks_by_score.append(
+                            (similarity_score, new_only_child_name, new_child_path)
+                        )
 
                 blocks_by_score.sort(key=lambda x: x[0], reverse=True)
 
                 while len(blocks_by_score) > 0:
-                    similarity_score, new_only_child_name, new_child_path = blocks_by_score.pop(0)
+                    (
+                        similarity_score,
+                        new_only_child_name,
+                        new_child_path,
+                    ) = blocks_by_score.pop(0)
 
                     # ask user whether the block was indeed renamed
                     is_renamed = self.questioner.ask_block_rename(
