@@ -297,13 +297,13 @@ class BlockDefComparerRegistry:
             if block_class in self.comparers_by_block_type:
                 return self.comparers_by_block_type[block_class]
 
-    def get_block_def_comparer_for_class(self, block_class):
+    def get_block_def_comparer_for_class(self, block_def_class):
         # find the comparer class for the most specific class in the block's inheritance tree
 
         if not self._scanned_for_comparers:
             self._scan_for_comparers()
 
-        for block_class in block_class.__mro__:
+        for block_class in block_def_class.__mro__:
             if block_class in self.comparers_by_block_type:
                 return self.comparers_by_block_type[block_class]
 
