@@ -11,8 +11,6 @@ from wagtail.blocks import (
 )
 
 from wagtail_streamfield_migration_toolkit.autodetect.comparers import (
-    # DefaultBlockDefComparer,
-    # ListBlockDefComparer,
     StreamBlockDefComparer,
     StructBlockDefComparer,
 )
@@ -193,8 +191,8 @@ class TestStreamBlocks(BlockComparerTestCase):
             expected_score=0.524,
         )
 
-    def test_diffsame_name_diff_children(self):
-        # same name, different children
+    def test_diff_name_diff_children(self):
+        # diff name, different children
         self.assertBlockComparisonScore(
             comparer=StreamBlockDefComparer,
             old_def=ThreeFieldStream(),

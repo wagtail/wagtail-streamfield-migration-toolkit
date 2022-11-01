@@ -5,9 +5,9 @@ from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
 
 
 @lru_cache()
-def import_klass(path):
-    module_path, klass_name = ".".join(path.split(".")[:-1]), path.split(".")[-1]
-    return getattr(importlib.import_module(module_path), klass_name)
+def import_class(path):
+    module_path, class_name = ".".join(path.split(".")[:-1]), path.split(".")[-1]
+    return getattr(importlib.import_module(module_path), class_name)
 
 
 class BaseBlockDefComparer:
@@ -17,6 +17,34 @@ class BaseBlockDefComparer:
     arg_weight = None
     name_weight = None
     kwarg_weight = None
+
+    @classmethod
+    def compare(cls, old_def, old_name, new_def, new_name):
+
+        if not cls.compare_types_initial(old_def, new_def):
+            return 0
+
+        # TODO it might be best to add some separate tests for the hashable_deep_deconstruct method
+        # itself
+        old_path, old_args, old_kwargs = cls.hashable_deep_deconstruct(old_def)
+        new_path, new_args, new_kwargs = cls.hashable_deep_deconstruct(new_def)
+
+        # - For structural blocks, args are a list of children, and kwargs contain block options
+        # like label, icon etc.
+        # - For other blocks, args includes any positional arguments and kwargs contains the block
+        # options. For example, SnippetChooser block would have the snippet class as a positional
+        # argument. Most basic blocks like CharBlock have no args it seems.
+
+        return cls._compare(
+            old_name=old_name,
+            old_path=old_path,
+            old_args=old_args,
+            old_kwargs=old_kwargs,
+            new_name=new_name,
+            new_path=new_path,
+            new_args=new_args,
+            new_kwargs=new_kwargs,
+        )
 
     @classmethod
     @lru_cache()
@@ -43,42 +71,10 @@ class BaseBlockDefComparer:
         arg_similarity = cls.compare_args(old_args, new_args)
         kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
 
-        # breakpoint()
-
-        return (
-            arg_similarity * cls.arg_weight
-            + name_similarity * cls.name_weight
-            + kwarg_similarity * cls.kwarg_weight
-        ) / (cls.arg_weight + cls.name_weight + cls.kwarg_weight)
-
-    @classmethod
-    def compare(cls, old_def, old_name, new_def, new_name):
-
-        if not cls.compare_types_initial(old_def, new_def):
-            return 0
-
-        # TODO it might be best to add some separate tests for the hashable_deep_deconstruct method
-        # itself
-        old_path, old_args, old_kwargs = cls.hashable_deep_deconstruct(old_def)
-        new_path, new_args, new_kwargs = cls.hashable_deep_deconstruct(new_def)
-
-        # breakpoint()
-
-        # - For structural blocks, args are a list of children, and kwargs contain block options
-        # like label, icon etc.
-        # - For other blocks, args includes any positional arguments and kwargs contains the block
-        # options. For example, SnippetChooser block would have the snippet class as a positional
-        # argument. Most basic blocks like CharBlock have no args it seems.
-
-        return cls._compare(
-            old_name=old_name,
-            old_path=old_path,
-            old_args=old_args,
-            old_kwargs=old_kwargs,
-            new_name=new_name,
-            new_path=new_path,
-            new_args=new_args,
-            new_kwargs=new_kwargs,
+        return cls.normalize_similarity(
+            arg_similarity=arg_similarity,
+            name_similarity=name_similarity,
+            kwarg_similarity=kwarg_similarity,
         )
 
     @staticmethod
@@ -122,7 +118,17 @@ class BaseBlockDefComparer:
 
     @classmethod
     def hashable_deep_deconstruct(cls, obj):
-        # TODO check if this is a good idea?
+        """Recursively deconstructs blocks and converts returned structures into hashable types.
+
+        This method is useful for use with the lru_cache decorator, since it requires method
+        arguments to be hashable, and the Block objects we are working with are not hashable. This
+        calls deconstruct on Blocks and converts the returned lists, dicts and child Blocks into
+        hashable objects.
+
+        NOTE: an attribute `_hashable_deep_deconstructed` is added to Block objects for which
+        this has already been called once.
+        """
+
         # if we've already computed this for a block, keep that as an attribute on the block
         # and return it. Note that this would be done only for blocks.
         if hasattr(obj, "_hashable_deep_deconstructed"):
@@ -157,6 +163,14 @@ class BaseBlockDefComparer:
         else:
             return obj
 
+    @classmethod
+    def normalize_similarity(cls, arg_similarity, name_similarity, kwarg_similarity):
+        return (
+            arg_similarity * cls.arg_weight
+            + name_similarity * cls.name_weight
+            + kwarg_similarity * cls.kwarg_weight
+        ) / (cls.arg_weight + cls.name_weight + cls.kwarg_weight)
+
 
 class StructuralBlockDefComparer(BaseBlockDefComparer):
     # For structural blocks, i.e., Stream, Struct and List Blocks.
@@ -175,9 +189,11 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
             old_child_args,
             old_child_kwargs,
         ) in old_children:
-            old_child_def = import_klass(old_child_path)
+            old_child_def = import_class(old_child_path)
             comparer: BaseBlockDefComparer = (
-                block_def_comparer_registry.get_block_def_comparer_for_class(old_child_def)
+                block_def_comparer_registry.get_block_def_comparer_for_class(
+                    old_child_def
+                )
             )
             # TODO do a process similar to what we do outside, where we rank blocks and pick one
             # to map to.
@@ -203,6 +219,10 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
 
     @staticmethod
     def get_children(old_args, new_args):
+        """Returns two lists, children of the old block and children of the new block.
+
+        `old_children, new_children = cls.get_children(old_args, new_args)`
+        """
         raise NotImplementedError
 
 
