@@ -32,8 +32,10 @@ class BaseBlockDefComparer:
         # - For structural blocks, args are a list of children, and kwargs contain block options
         # like label, icon etc.
         # - For other blocks, args includes any positional arguments and kwargs contains the block
-        # options. For example, SnippetChooser block would have the snippet class as a positional
-        # argument. Most basic blocks like CharBlock have no args it seems.
+        # options. Most basic blocks like CharBlock have no args it seems.
+        # TODO we have an issue with blocks like SnippetChooserBlock which have are using the
+        # base Blocks deconstruct method, where passing a positional arg returns it in args in
+        # the deconstruct method, but passing the same as a keyword arg returns it in kwargs.
 
         return cls._compare(
             old_name=old_name,
