@@ -21,9 +21,6 @@ class BaseBlockDefComparer:
     @classmethod
     def compare(cls, old_def, old_name, new_def, new_name):
 
-        if not cls.compare_types_initial(old_def, new_def):
-            return 0
-
         # TODO it might be best to add some separate tests for the hashable_deep_deconstruct method
         # itself
         old_path, old_args, old_kwargs = cls.hashable_deep_deconstruct(old_def)
@@ -33,7 +30,7 @@ class BaseBlockDefComparer:
         # like label, icon etc.
         # - For other blocks, args includes any positional arguments and kwargs contains the block
         # options. Most basic blocks like CharBlock have no args it seems.
-        # TODO we have an issue with blocks like SnippetChooserBlock which have are using the
+        # TODO we have an issue with blocks like SnippetChooserBlock which are using the
         # base Blocks deconstruct method, where passing a positional arg returns it in args in
         # the deconstruct method, but passing the same as a keyword arg returns it in kwargs.
 
@@ -69,6 +66,7 @@ class BaseBlockDefComparer:
         if not cls.compare_types(old_path, new_path):
             return 0
 
+        # TODO args and kwargs distinct comparison might have to be changed in future
         name_similarity = cls.compare_names(old_name, new_name)
         arg_similarity = cls.compare_args(old_args, new_args)
         kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
@@ -78,12 +76,6 @@ class BaseBlockDefComparer:
             name_similarity=name_similarity,
             kwarg_similarity=kwarg_similarity,
         )
-
-    @staticmethod
-    def compare_types_initial(old_def, new_def):
-        old_path, _, _ = old_def.deconstruct()
-        new_path, _, _ = new_def.deconstruct()
-        return old_path == new_path
 
     @staticmethod
     def compare_types(old_path, new_path):
