@@ -16,6 +16,16 @@ from wagtail_streamfield_migration_toolkit.operations import (
     RenameStreamChildrenOperation,
 )
 
+try:
+    from wagtail.signal_handlers import disable_reference_index_auto_update
+except ImportError:
+    from contextlib import contextmanager
+
+    # define a do-nothing context manager
+    @contextmanager
+    def disable_reference_index_auto_update():
+        yield
+
 
 class TestExceptionRaisedInRawData(TestCase):
     """Directly test whether an exception is raised by apply_changes_to_raw_data for invalid defs.
@@ -152,8 +162,9 @@ class TestExceptionRaisedForInstance(BadDataMigrationTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.create_instance()
-        cls.append_invalid_instance_data()
+        with disable_reference_index_auto_update():
+            cls.create_instance()
+            cls.append_invalid_instance_data()
 
     def test_migrate(self):
 
@@ -174,12 +185,13 @@ class TestExceptionRaisedForLatestRevision(BadDataMigrationTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.create_instance()
+        with disable_reference_index_auto_update():
+            cls.create_instance()
 
-        for i in range(4):
-            cls.create_revision(5 - i)
+            for i in range(4):
+                cls.create_revision(5 - i)
 
-        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(0)
+            cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(0)
 
     def test_migrate(self):
         with self.assertRaisesMessage(
@@ -200,14 +212,15 @@ class TestExceptionRaisedForLiveRevision(BadDataMigrationTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.create_instance()
+        with disable_reference_index_auto_update():
+            cls.create_instance()
 
-        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
-        cls.instance.live_revision_id = cls.invalid_revision_id
-        cls.instance.save()
+            cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
+            cls.instance.live_revision_id = cls.invalid_revision_id
+            cls.instance.save()
 
-        for i in range(1, 5):
-            cls.create_revision(5 - i)
+            for i in range(1, 5):
+                cls.create_revision(5 - i)
 
     def test_migrate(self):
         with self.assertRaisesMessage(
@@ -230,11 +243,12 @@ class TestExceptionIgnoredForOtherRevisions(BadDataMigrationTestCase):
 
     @classmethod
     def setUpTestData(cls):
-        cls.create_instance()
-        cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
+        with disable_reference_index_auto_update():
+            cls.create_instance()
+            cls.invalid_revision_id, cls.invalid_revision_created_at = cls.create_invalid_revision(5)
 
-        for i in range(1, 5):
-            cls.create_revision(5 - i)
+            for i in range(1, 5):
+                cls.create_revision(5 - i)
 
     def test_migrate(self):
         with self.assertLogs(level="ERROR") as cm:
