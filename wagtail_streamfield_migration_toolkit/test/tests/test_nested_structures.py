@@ -16,8 +16,7 @@ class FieldStructStreamChildBlockTest(TestCase):
     We use `nestedstruct.simplestream` blocks here.
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
@@ -32,7 +31,7 @@ class FieldStructStreamChildBlockTest(TestCase):
             content__3__simplestream__0__char1__value="Char Block 1",
             content__3__simplestream__1__char2__value="Char Block 2",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
@@ -148,8 +147,7 @@ class FieldStructStructChildBlockTest(TestCase):
     We use `nestedstruct.simplestruct` blocks here
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstruct",
@@ -158,7 +156,7 @@ class FieldStructStructChildBlockTest(TestCase):
             content__2__nestedstruct__list1__0__value="a",
             content__3="simplestruct",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
@@ -249,8 +247,7 @@ class FieldStreamStreamChildBlockTest(TestCase):
     We use `nestedstream.stream1` blocks here.
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstream",
@@ -267,7 +264,7 @@ class FieldStreamStreamChildBlockTest(TestCase):
             content__3="simplestream",
             content__3__simplestream__0__char1__value="Char Block 1",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
@@ -385,8 +382,7 @@ class FieldStreamStructChildBlockTest(TestCase):
     We use `nestedstream.simplestruct` blocks here.
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedstream",
@@ -398,7 +394,7 @@ class FieldStreamStructChildBlockTest(TestCase):
             content__3="simplestream",
             content__3__simplestream__0__char1__value="Char Block 1",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
@@ -531,8 +527,7 @@ class FieldListStreamChildBlockTest(TestCase):
     We use `nestedlist_stream.item` blocks here.
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1="nestedlist_stream",
@@ -546,7 +541,7 @@ class FieldListStreamChildBlockTest(TestCase):
             content__3__simplestream__0__char1__value="Char Block 1",
             content__3__simplestream__1__char2__value="Char Block 2",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
@@ -677,8 +672,7 @@ class FieldListStructChildBlockTest(TestCase):
     We use `nestedlist_struct.item` blocks here.
     """
 
-    @classmethod
-    def setUpTestData(cls):
+    def setUp(self):
         raw_data = factories.SampleModelFactory(
             content__0__char1__value="Char Block 1",
             content__1__nestedlist_struct__0__char1="Nested List Struct 1",
@@ -686,7 +680,7 @@ class FieldListStructChildBlockTest(TestCase):
             content__2__nestedlist_struct__0__char1="Nested List Struct 3",
             content__3="simplestruct",
         ).content.raw_data
-        cls.raw_data = raw_data
+        self.raw_data = raw_data
 
     def test_blocks_and_data_not_operated_on_intact(self):
         """Test whether other blocks and data not passed to an operation are intact.
