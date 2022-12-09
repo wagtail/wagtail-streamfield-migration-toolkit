@@ -79,6 +79,16 @@ class MigrateStreamData(RunPython):
 
         return (self.__class__.__qualname__, args, kwargs)
 
+    @property
+    def migration_name_fragment(self):
+        # TODO Document for people who want to create custom operations
+        # TODO what about custom names
+        # TODO add a test case
+        fragments = {
+            op.operation_name_fragment for op, path in self.operations_and_block_paths
+        }
+        return "_".join(fragments)
+
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
 

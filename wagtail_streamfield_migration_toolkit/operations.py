@@ -9,6 +9,11 @@ class BaseBlockOperation:
     def apply(self, block_value):
         raise NotImplementedError
 
+    @property
+    def operation_name_fragment(self):
+        # TODO look at abstract base class
+        return ""
+
 
 @deconstructible
 class RenameStreamChildrenOperation(BaseBlockOperation):
@@ -36,6 +41,10 @@ class RenameStreamChildrenOperation(BaseBlockOperation):
             else:
                 mapped_block_value.append(child_block)
         return mapped_block_value
+
+    @property
+    def operation_name_fragment(self):
+        return "rename_{}_to_{}".format(self.old_name, self.new_name)
 
 
 @deconstructible
@@ -65,6 +74,10 @@ class RenameStructChildrenOperation(BaseBlockOperation):
                 mapped_block_value[child_key] = child_value
         return mapped_block_value
 
+    @property
+    def operation_name_fragment(self):
+        return "rename_{}_to_{}".format(self.old_name, self.new_name)
+
 
 @deconstructible
 class RemoveStreamChildrenOperation(BaseBlockOperation):
@@ -89,6 +102,10 @@ class RemoveStreamChildrenOperation(BaseBlockOperation):
             if child_block["type"] != self.name
         ]
 
+    @property
+    def operation_name_fragment(self):
+        return "remove_{}".format(self.name)
+
 
 @deconstructible
 class RemoveStructChildrenOperation(BaseBlockOperation):
@@ -112,6 +129,10 @@ class RemoveStructChildrenOperation(BaseBlockOperation):
             for child_key, child_value in block_value.items()
             if child_key != self.name
         }
+
+    @property
+    def operation_name_fragment(self):
+        return "remove_{}".format(self.name)
 
 
 class StreamChildrenToListBlockOperation(BaseBlockOperation):
@@ -151,6 +172,12 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
             new_temp_blocks.append({**block, "type": "item"})
         self.temp_blocks = new_temp_blocks
 
+    @property
+    def operation_name_fragment(self):
+        return "convert_{}_to_ListBlock_{}".format(
+            self.block_name, self.list_block_name
+        )
+
 
 class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
     """Combines StreamBlock children of the given types into a new StreamBlock
@@ -183,6 +210,10 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
         mapped_block_value.append(new_stream_block)
         return mapped_block_value
 
+    @property
+    def operation_name_fragment(self):
+        return "convert_{}_to_StreamBlock".format("_".join(self.block_names))
+
 
 class AlterBlockValueOperation(BaseBlockOperation):
     """Alters the value of each block to the given value
@@ -197,6 +228,10 @@ class AlterBlockValueOperation(BaseBlockOperation):
 
     def apply(self, block_value):
         return self.new_value
+
+    @property
+    def operation_name_fragment(self):
+        return "alter_block_value"
 
 
 class StreamChildrenToStructBlockOperation(BaseBlockOperation):
@@ -266,6 +301,12 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
                 mapped_block_value.append(child_block)
         return mapped_block_value
 
+    @property
+    def operation_name_fragment(self):
+        return "convert_{}_to_StructBlock_{}".format(
+            self.block_name, self.struct_block_name
+        )
+
 
 class ListChildrenToStructBlockOperation(BaseBlockOperation):
     def __init__(self, block_name):
@@ -282,3 +323,7 @@ class ListChildrenToStructBlockOperation(BaseBlockOperation):
                 {**child_block, "value": {self.block_name: child_block["value"]}}
             )
         return mapped_block_value
+
+    @property
+    def operation_name_fragment(self):
+        return "convert_to_{}".format(self.block_name)
