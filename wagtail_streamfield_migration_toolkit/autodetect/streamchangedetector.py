@@ -16,7 +16,9 @@ class StreamDefChangeDetector:
     For now, this can only detect rename or remove changes.
     """
 
-    SIMILARITY_THRESHOLD = 0.4
+    VERIFYING_SIMILARITY_THRESHOLD = 0.4
+    # TODO this will probably have to be reduced when the arg/kwarg/child comparison is improved
+    CONFIDENT_SIMILARITY_THRESHOLD = 0.9
 
     def __init__(self, old_streamblock_def, new_streamblock_def):
         self.old_streamblock_def = old_streamblock_def
@@ -99,31 +101,46 @@ class StreamDefChangeDetector:
             old_child_def = old_child_defs[old_child_name]
             is_child_mapped = False
 
-            # For now assume that same name means same block (i.e. the old block wasn't deleted
-            # and a new block with the same name added)
+            # Find out if the block maps to one of the new only children. If it maps, that
+            # would mean that the block has been renamed
+
+            comparer = block_def_comparer_registry.get_block_def_comparer_for_instance(
+                old_child_def
+            )
             if old_child_name in new_child_names:
-                new_child_def = new_child_defs[old_child_name]
-                # recursion call
-                self.find_renamed_or_removed_defs(
-                    old_child_def,
-                    new_child_def,
-                    old_child_path,
-                )
-                is_child_mapped = True
-                # TODO add another threshold for cases where we can be sure that the blocks are the
-                # same without asking the user.
+                new_child_name = old_child_name
+                new_child_def = new_child_defs[new_child_name]
+                new_child_path = parent_path + path_suffix + new_child_name
 
-            else:
-                comparer = (
-                    block_def_comparer_registry.get_block_def_comparer_for_instance(
-                        old_child_def
+                similarity_score = comparer.compare(
+                    old_def=old_child_def,
+                    old_name=old_child_name,
+                    new_def=new_child_def,
+                    new_name=new_child_name,
+                )
+                if similarity_score >= self.CONFIDENT_SIMILARITY_THRESHOLD:
+
+                    # recursion call
+                    self.find_renamed_or_removed_defs(
+                        old_child_def,
+                        new_child_def,
+                        old_child_path,
                     )
-                )
+                    is_child_mapped = True
 
-                # Find out if the block maps to one of the new only children. If it maps, that
-                # would mean that the block has been renamed
+                elif similarity_score >= self.VERIFYING_SIMILARITY_THRESHOLD:
+                    if self.questioner.ask_block_not_changed(old_path=old_child_path):
+                        # recursion call
+                        self.find_renamed_or_removed_defs(
+                            old_child_def,
+                            new_child_def,
+                            old_child_path,
+                        )
+                        is_child_mapped = True
 
+            if not is_child_mapped:
                 blocks_by_score = []
+
                 for new_only_child_name in new_only_child_names:
                     new_child_path = parent_path + path_suffix + new_only_child_name
                     new_child_def = new_child_defs[new_only_child_name]
@@ -135,40 +152,52 @@ class StreamDefChangeDetector:
                         new_def=new_child_def,
                         new_name=new_only_child_name,
                     )
-                    if similarity_score >= self.SIMILARITY_THRESHOLD:
+
+                    if similarity_score >= self.CONFIDENT_SIMILARITY_THRESHOLD:
+                        self.find_renamed_or_removed_defs(
+                            old_child_def,
+                            new_child_def,
+                            old_child_path,
+                        )  # recursion call
+                        is_child_mapped = True
+                        break
+                    elif similarity_score >= self.VERIFYING_SIMILARITY_THRESHOLD:
                         blocks_by_score.append(
                             (similarity_score, new_only_child_name, new_child_path)
                         )
 
-                blocks_by_score.sort(key=lambda x: x[0], reverse=True)
+                if not is_child_mapped:
+                    # sort by similarity score so that the user gets asked the highest similarity
+                    # comparison first
+                    blocks_by_score.sort(key=lambda x: x[0], reverse=True)
 
-                for (
-                    similarity_score,
-                    new_only_child_name,
-                    new_child_path,
-                ) in blocks_by_score:
+                    for (
+                        similarity_score,
+                        new_only_child_name,
+                        new_child_path,
+                    ) in blocks_by_score:
 
-                    # ask user whether the block was indeed renamed
-                    is_renamed = self.questioner.ask_block_rename(
-                        old_path=old_child_path, new_path=new_child_path
-                    )
-                    if is_renamed:
-                        is_child_mapped = True
-                        self.rename_changes.append(
-                            (
-                                old_child_path,
-                                new_only_child_name,
-                                old_block_def,
+                        # ask user whether the block was indeed renamed
+                        is_renamed = self.questioner.ask_block_rename(
+                            old_path=old_child_path, new_path=new_child_path
+                        )
+                        if is_renamed:
+                            is_child_mapped = True
+                            self.rename_changes.append(
+                                (
+                                    old_child_path,
+                                    new_only_child_name,
+                                    old_block_def,
+                                )
                             )
-                        )
-                        new_only_child_names.remove(new_only_child_name)
-                        # recursion call
-                        self.find_renamed_or_removed_defs(
-                            old_block_def=old_child_def,
-                            new_block_def=new_child_defs[new_only_child_name],
-                            parent_path=old_child_path,
-                        )
-                        break
+                            new_only_child_names.remove(new_only_child_name)
+                            # recursion call
+                            self.find_renamed_or_removed_defs(
+                                old_block_def=old_child_def,
+                                new_block_def=new_child_defs[new_only_child_name],
+                                parent_path=old_child_path,
+                            )
+                            break
 
             # if there is no block to map this to, check if it has been removed
             if not is_child_mapped:

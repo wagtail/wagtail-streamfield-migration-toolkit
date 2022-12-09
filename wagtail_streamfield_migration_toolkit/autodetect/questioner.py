@@ -10,3 +10,7 @@ class InteractiveDataMigrationQuestioner(InteractiveMigrationQuestioner):
     def ask_block_remove(self, old_path):
         msg = "Was '{}' removed? [y/N]"
         return self._boolean_input(msg.format(old_path))
+
+    def ask_block_not_changed(self, old_path):
+        msg = "Is '{}' the same block as before? [y/N]"
+        return self._boolean_input(msg.format(old_path))
