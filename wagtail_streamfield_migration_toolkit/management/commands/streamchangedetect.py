@@ -65,12 +65,13 @@ class Command(BaseCommand):
                 )
                 migration_operations.append(migration_operation)
 
-            # TODO migration name? This would be easier to do after we add a suggest_name to our
-            # `MigrateStreamData` class
-            migration = Migration("stream_data_migration", app)
+            migration = Migration("", app)
             migration.operations = migration_operations
             stream_data_changes[app] = [migration]
 
+        # The `arrange_for_graph` method will call the `suggest_name` method of the migration,
+        # which will in turn use the `migration_name_fragment` of each migration operation to
+        # generate the migration name.
         stream_data_changes = autodetector.arrange_for_graph(
             changes=stream_data_changes,
             graph=loader.graph,
