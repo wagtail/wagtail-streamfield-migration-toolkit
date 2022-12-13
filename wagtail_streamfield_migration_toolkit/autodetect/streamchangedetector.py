@@ -16,7 +16,7 @@ class StreamDefChangeDetector:
     For now, this can only detect rename or remove changes.
     """
 
-    SIMILARITY_THRESHOLD = 0.5
+    SIMILARITY_THRESHOLD = 0.4
 
     def __init__(self, old_streamblock_def, new_streamblock_def):
         self.old_streamblock_def = old_streamblock_def
@@ -110,15 +110,20 @@ class StreamDefChangeDetector:
                     old_child_path,
                 )
                 is_child_mapped = True
+                # TODO add another threshold for cases where we can be sure that the blocks are the
+                # same without asking the user.
 
             else:
-                comparer = block_def_comparer_registry.get_block_def_comparer(
-                    old_child_def
+                comparer = (
+                    block_def_comparer_registry.get_block_def_comparer_for_instance(
+                        old_child_def
+                    )
                 )
 
                 # Find out if the block maps to one of the new only children. If it maps, that
                 # would mean that the block has been renamed
-                # TODO see if we can order by the similarity score.
+
+                blocks_by_score = []
                 for new_only_child_name in new_only_child_names:
                     new_child_path = parent_path + path_suffix + new_only_child_name
                     new_child_def = new_child_defs[new_only_child_name]
@@ -131,27 +136,39 @@ class StreamDefChangeDetector:
                         new_name=new_only_child_name,
                     )
                     if similarity_score >= self.SIMILARITY_THRESHOLD:
-                        # ask user whether the block was indeed renamed
-                        is_renamed = self.questioner.ask_block_rename(
-                            old_path=old_child_path, new_path=new_child_path
+                        blocks_by_score.append(
+                            (similarity_score, new_only_child_name, new_child_path)
                         )
-                        if is_renamed:
-                            is_child_mapped = True
-                            self.rename_changes.append(
-                                (
-                                    old_child_path,
-                                    new_only_child_name,
-                                    old_block_def,
-                                )
+
+                blocks_by_score.sort(key=lambda x: x[0], reverse=True)
+
+                for (
+                    similarity_score,
+                    new_only_child_name,
+                    new_child_path,
+                ) in blocks_by_score:
+
+                    # ask user whether the block was indeed renamed
+                    is_renamed = self.questioner.ask_block_rename(
+                        old_path=old_child_path, new_path=new_child_path
+                    )
+                    if is_renamed:
+                        is_child_mapped = True
+                        self.rename_changes.append(
+                            (
+                                old_child_path,
+                                new_only_child_name,
+                                old_block_def,
                             )
-                            new_only_child_names.remove(new_only_child_name)
-                            # recursion call
-                            self.find_renamed_or_removed_defs(
-                                old_block_def=old_child_def,
-                                new_block_def=new_child_def,
-                                parent_path=old_child_path,
-                            )
-                            break
+                        )
+                        new_only_child_names.remove(new_only_child_name)
+                        # recursion call
+                        self.find_renamed_or_removed_defs(
+                            old_block_def=old_child_def,
+                            new_block_def=new_child_defs[new_only_child_name],
+                            parent_path=old_child_path,
+                        )
+                        break
 
             # if there is no block to map this to, check if it has been removed
             if not is_child_mapped:
