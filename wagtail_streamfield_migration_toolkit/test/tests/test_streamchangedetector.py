@@ -117,10 +117,14 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRenameOperationEqual(expected_operation, operation)
 
     @mock.patch(
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        return_value=True,
+    )
+    @mock.patch(
         "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
         return_value=True,
     )
-    def test_nested_struct_child_removed(self, mock_class):
+    def test_nested_struct_child_removed(self, mock_class1, mock_class2):
         comparer = StreamDefChangeDetector(
             NestedStreamBlock(), NestedStreamWithRemovedStructChild()
         )
@@ -142,10 +146,14 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRemoveOperationEqual(expected_operation, operation)
 
     @mock.patch(
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        return_value=True,
+    )
+    @mock.patch(
         "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
         return_value=True,
     )
-    def test_nested_struct_child_renamed(self, mock_class):
+    def test_nested_struct_child_renamed(self, mock_class1, mock_class2):
         comparer = StreamDefChangeDetector(
             NestedStreamBlock(), NestedStreamWithRenamedStructChild()
         )
