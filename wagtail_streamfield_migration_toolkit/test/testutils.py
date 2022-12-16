@@ -11,11 +11,7 @@ class MigrationTestMixin:
     default_operation_and_block_path = []
     app_name = None
 
-    def apply_migration(
-        self,
-        revisions_from=None,
-        operations_and_block_path=None,
-    ):
+    def init_migration(self, revisions_from=None, operations_and_block_path=None):
         migration = Migration(
             "test_migration", "wagtail_streamfield_migration_toolkit_test"
         )
@@ -28,6 +24,18 @@ class MigrationTestMixin:
             revisions_from=revisions_from,
         )
         migration.operations = [migration_operation]
+
+        return migration
+
+    def apply_migration(
+        self,
+        revisions_from=None,
+        operations_and_block_path=None,
+    ):
+        migration = self.init_migration(
+            revisions_from=revisions_from,
+            operations_and_block_path=operations_and_block_path,
+        )
 
         loader = MigrationLoader(connection=connection)
         loader.build_graph()
