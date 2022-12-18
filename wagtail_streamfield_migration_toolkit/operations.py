@@ -1,18 +1,20 @@
+from abc import ABC, abstractmethod
 from wagtail_streamfield_migration_toolkit.utils import formatted_list_child_generator
 from django.utils.deconstruct import deconstructible
 
 
-class BaseBlockOperation:
+class BaseBlockOperation(ABC):
     def __init__(self):
         pass
 
+    @abstractmethod
     def apply(self, block_value):
-        raise NotImplementedError
+        pass
 
     @property
+    @abstractmethod
     def operation_name_fragment(self):
-        # TODO look at abstract base class
-        return ""
+        pass
 
 
 @deconstructible

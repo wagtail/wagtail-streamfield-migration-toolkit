@@ -332,6 +332,9 @@ define the required methods,
 - `operation_name_fragment`  
     (`@property`) Returns a name to be used for generating migration names.
 
+(**NOTE:** `BaseBlockOperation` inherits from `abc.ABC`, so all of the required methods
+mentioned above have to be defined on any class inheriting from it.)
+
 For example, if we want to truncate the string in a `CharBlock` to a given length,
 
 ```python
