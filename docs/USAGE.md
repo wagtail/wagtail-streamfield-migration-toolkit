@@ -325,7 +325,12 @@ The following operations allow you to alter the structure of blocks in certain w
 While this package comes with a set of operations for common use cases, there may be many
 instances where you need to define your own operation for mapping data. Making a custom operation
 is fairly straightforward. All you need to do is extend the `BaseBlockOperation` class and 
-define the `apply` method. 
+define the required methods,
+
+- `apply`  
+    This applies the actual changes on the existing block value and returns the new block value.
+- `operation_name_fragment`  
+    (`@property`) Returns a name to be used for generating migration names.
 
 For example, if we want to truncate the string in a `CharBlock` to a given length,
 
@@ -342,6 +347,10 @@ class MyBlockOperation(BaseBlockOperation):
         # block value is the string value of the CharBlock
         new_block_value = block_value[:self.length]
         return new_block_value
+
+    @property
+    def operation_name_fragment(self):
+        return "custom_length_{}".format(self.length)
 
 ```
 
