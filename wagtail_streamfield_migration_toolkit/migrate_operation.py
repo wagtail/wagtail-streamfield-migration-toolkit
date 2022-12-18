@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import OrderedDict
 from django.db.models import JSONField, F, Q, Subquery, OuterRef
 from django.db.models.functions import Cast
 from django.db.migrations import RunPython
@@ -81,13 +82,10 @@ class MigrateStreamData(RunPython):
 
     @property
     def migration_name_fragment(self):
-        # TODO Document for people who want to create custom operations
-        # TODO what about custom names
-        # TODO add a test case
-        fragments = {
-            op.operation_name_fragment for op, path in self.operations_and_block_paths
-        }
-        return "_".join(fragments)
+        fragments = OrderedDict(
+            (op.operation_name_fragment, None) for op, path in self.operations_and_block_paths
+        )
+        return "_".join(fragments.keys())
 
     def migrate_stream_data_forward(self, apps, schema_editor):
         model = apps.get_model(self.app_name, self.model_name)
