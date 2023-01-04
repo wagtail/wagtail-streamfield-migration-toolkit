@@ -82,8 +82,10 @@ class MigrateStreamData(RunPython):
 
     @property
     def migration_name_fragment(self):
+        # We are using an OrderedDict here to essentially get the functionality of an ordered set
+        # so that names generated will be consistent.
         fragments = OrderedDict(
-            (op.operation_name_fragment, None) for op, path in self.operations_and_block_paths
+            (op.operation_name_fragment, None) for op, _ in self.operations_and_block_paths
         )
         return "_".join(fragments.keys())
 

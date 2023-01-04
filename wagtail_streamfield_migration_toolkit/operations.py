@@ -176,7 +176,7 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "convert_{}_to_ListBlock_{}".format(
+        return "{}_to_list_block_{}".format(
             self.block_name, self.list_block_name
         )
 
@@ -214,7 +214,7 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "convert_{}_to_StreamBlock".format("_".join(self.block_names))
+        return "{}_to_stream_block".format("_".join(self.block_names))
 
 
 class AlterBlockValueOperation(BaseBlockOperation):
@@ -305,7 +305,7 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "convert_{}_to_StructBlock_{}".format(
+        return "{}_to_struct_block_{}".format(
             self.block_name, self.struct_block_name
         )
 
@@ -328,4 +328,4 @@ class ListChildrenToStructBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "convert_to_{}".format(self.block_name)
+        return "list_block_items_to_{}".format(self.block_name)
