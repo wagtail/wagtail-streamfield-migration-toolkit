@@ -353,7 +353,7 @@ class MyBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "custom_length_{}".format(self.length)
+        return "truncate_{}".format(self.length)
 
 ```
 
