@@ -42,6 +42,9 @@ class NestedStreamWithRenamedStructChild(NestedStreamBlock):
     struct1 = SimpleStructWithRenamedChild()
 
 
+# TODO do we use the same blocks here?
+
+
 class StreamChangeDetectorTests(TestCase):
     def assertRemoveOperationEqual(self, operation1, operation2):
         self.assertEqual(
@@ -173,3 +176,27 @@ class StreamChangeDetectorTests(TestCase):
         ):
             self.assertEqual(expected_block_path, block_path)
             self.assertRenameOperationEqual(expected_operation, operation)
+
+    @mock.patch(
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        return_value=False,
+    )
+    @mock.patch(
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
+        return_value=True,
+    )
+    @mock.patch(
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
+        return_value=False,
+    )
+    def test_nested_struct_child_renamed_incorrect_input(
+        self, mock_class1, mock_class2, mock_class3
+    ):
+        # Make sure the patched functions are actually called in the previous test, and handled
+        # properly
+        comparer = StreamDefChangeDetector(
+            NestedStreamBlock(), NestedStreamWithRenamedStructChild()
+        )
+        comparer.create_data_migration_operations()
+
+        self.assertEqual(0, len(comparer.merged_operations_and_block_paths))
