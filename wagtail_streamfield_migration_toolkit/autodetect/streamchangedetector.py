@@ -9,16 +9,15 @@ from ..operations import (
     RemoveStructChildrenOperation,
 )
 
+VERIFYING_SIMILARITY_THRESHOLD = 0.4
+CONFIDENT_SIMILARITY_THRESHOLD = 0.85
+
 
 class StreamDefChangeDetector:
     """Compare the old and new StreamField definitions to detect changes.
 
     For now, this can only detect rename or remove changes.
     """
-
-    VERIFYING_SIMILARITY_THRESHOLD = 0.4
-    # TODO this will probably have to be reduced when the arg/kwarg/child comparison is improved
-    CONFIDENT_SIMILARITY_THRESHOLD = 0.9
 
     def __init__(self, old_streamblock_def, new_streamblock_def):
         self.old_streamblock_def = old_streamblock_def
@@ -118,7 +117,7 @@ class StreamDefChangeDetector:
                     new_def=new_child_def,
                     new_name=new_child_name,
                 )
-                if similarity_score >= self.CONFIDENT_SIMILARITY_THRESHOLD:
+                if similarity_score >= CONFIDENT_SIMILARITY_THRESHOLD:
 
                     # recursion call
                     self.find_renamed_or_removed_defs(
@@ -128,7 +127,7 @@ class StreamDefChangeDetector:
                     )
                     is_child_mapped = True
 
-                elif similarity_score >= self.VERIFYING_SIMILARITY_THRESHOLD:
+                elif similarity_score >= VERIFYING_SIMILARITY_THRESHOLD:
                     if self.questioner.ask_block_not_changed(old_path=old_child_path):
                         # recursion call
                         self.find_renamed_or_removed_defs(
@@ -153,7 +152,7 @@ class StreamDefChangeDetector:
                         new_name=new_only_child_name,
                     )
 
-                    if similarity_score >= self.CONFIDENT_SIMILARITY_THRESHOLD:
+                    if similarity_score >= CONFIDENT_SIMILARITY_THRESHOLD:
                         self.find_renamed_or_removed_defs(
                             old_child_def,
                             new_child_def,
@@ -161,7 +160,7 @@ class StreamDefChangeDetector:
                         )  # recursion call
                         is_child_mapped = True
                         break
-                    elif similarity_score >= self.VERIFYING_SIMILARITY_THRESHOLD:
+                    elif similarity_score >= VERIFYING_SIMILARITY_THRESHOLD:
                         blocks_by_score.append(
                             (similarity_score, new_only_child_name, new_child_path)
                         )
