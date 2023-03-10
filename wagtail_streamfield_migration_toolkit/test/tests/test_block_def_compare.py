@@ -82,7 +82,7 @@ class BlockComparerTestCase(TestCase):
         old_name: str,
         new_def: Block,
         new_name: str,
-        predicate: Callable,
+        predicate: Callable[[float], bool],
     ):
         # predicate would be one of the functions `is_similar`, `is_unsure`, `is_dissimilar`
         comparison_score = comparer.compare(

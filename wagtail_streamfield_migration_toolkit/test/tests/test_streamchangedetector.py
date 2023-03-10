@@ -70,7 +70,7 @@ class StreamChangeDetectorTests(TestCase):
         self.assertEqual(len(comparer.merged_operations_and_block_paths), 0)
 
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_removed",
         return_value=True,
     )
     def test_stream_child_removed(self, mock_class):
@@ -95,7 +95,7 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRemoveOperationEqual(expected_operation, operation)
 
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_renamed",
         return_value=True,
     )
     def test_stream_child_renamed(self, mock_class):
@@ -120,11 +120,11 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRenameOperationEqual(expected_operation, operation)
 
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_same",
         return_value=True,
     )
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_removed",
         return_value=True,
     )
     def test_nested_struct_child_removed(self, mock_class1, mock_class2):
@@ -149,11 +149,11 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRemoveOperationEqual(expected_operation, operation)
 
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_same",
         return_value=True,
     )
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_renamed",
         return_value=True,
     )
     def test_nested_struct_child_renamed(self, mock_class1, mock_class2):
@@ -178,15 +178,15 @@ class StreamChangeDetectorTests(TestCase):
             self.assertRenameOperationEqual(expected_operation, operation)
 
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_not_changed",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_same",
         return_value=False,
     )
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_renamed",
         return_value=True,
     )
     @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
+        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_if_block_removed",
         return_value=False,
     )
     def test_nested_struct_child_renamed_incorrect_input(

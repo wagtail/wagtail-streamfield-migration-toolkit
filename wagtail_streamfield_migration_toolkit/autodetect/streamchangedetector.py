@@ -88,7 +88,7 @@ class StreamDefChangeDetector:
 
         # To keep track of the block path. We will need this for creating operations and keeping
         # track
-        path_suffix = "" if parent_path == "" else "."
+        path_separator = "" if parent_path == "" else "."
 
         old_child_names = set(old_child_defs.keys())
         new_child_names = set(new_child_defs.keys())
@@ -96,7 +96,7 @@ class StreamDefChangeDetector:
         new_only_child_names = new_child_names - old_child_names
 
         for old_child_name in old_child_names:
-            old_child_path = parent_path + path_suffix + old_child_name
+            old_child_path = parent_path + path_separator + old_child_name
             old_child_def = old_child_defs[old_child_name]
             is_child_mapped = False
 
@@ -109,7 +109,7 @@ class StreamDefChangeDetector:
             if old_child_name in new_child_names:
                 new_child_name = old_child_name
                 new_child_def = new_child_defs[new_child_name]
-                new_child_path = parent_path + path_suffix + new_child_name
+                new_child_path = parent_path + path_separator + new_child_name
 
                 similarity_score = comparer.compare(
                     old_def=old_child_def,
@@ -128,7 +128,9 @@ class StreamDefChangeDetector:
                     is_child_mapped = True
 
                 elif similarity_score >= VERIFYING_SIMILARITY_THRESHOLD:
-                    if self.questioner.ask_block_not_changed(old_path=old_child_path):
+                    if self.questioner.ask_if_block_same(
+                        old_path=old_child_path, new_path=new_child_path
+                    ):
                         # recursion call
                         self.find_renamed_or_removed_defs(
                             old_child_def,
@@ -141,7 +143,7 @@ class StreamDefChangeDetector:
                 blocks_by_score = []
 
                 for new_only_child_name in new_only_child_names:
-                    new_child_path = parent_path + path_suffix + new_only_child_name
+                    new_child_path = parent_path + path_separator + new_only_child_name
                     new_child_def = new_child_defs[new_only_child_name]
 
                     # compare the blocks and find whether they are similar enough to be mapped
@@ -177,7 +179,7 @@ class StreamDefChangeDetector:
                     ) in blocks_by_score:
 
                         # ask user whether the block was indeed renamed
-                        is_renamed = self.questioner.ask_block_rename(
+                        is_renamed = self.questioner.ask_if_block_renamed(
                             old_path=old_child_path, new_path=new_child_path
                         )
                         if is_renamed:
@@ -200,7 +202,9 @@ class StreamDefChangeDetector:
 
             # if there is no block to map this to, check if it has been removed
             if not is_child_mapped:
-                is_removed = self.questioner.ask_block_remove(old_path=old_child_path)
+                is_removed = self.questioner.ask_if_block_removed(
+                    old_path=old_child_path
+                )
                 if is_removed:
                     self.remove_changes.append((old_child_path, old_block_def))
 
