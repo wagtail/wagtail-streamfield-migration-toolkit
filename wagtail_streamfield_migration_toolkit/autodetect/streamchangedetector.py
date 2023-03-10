@@ -19,11 +19,11 @@ class StreamDefChangeDetector:
     For now, this can only detect rename or remove changes.
     """
 
-    def __init__(self, old_streamblock_def, new_streamblock_def):
+    def __init__(self, old_streamblock_def, new_streamblock_def, questioner=InteractiveDataMigrationQuestioner()):
         self.old_streamblock_def = old_streamblock_def
         self.new_streamblock_def = new_streamblock_def
 
-        self.questioner = InteractiveDataMigrationQuestioner()
+        self.questioner = questioner
 
         # to keep track of mappings for which we need to make an operation
         self.rename_changes = []
