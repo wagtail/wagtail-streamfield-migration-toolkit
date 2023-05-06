@@ -11,6 +11,9 @@ from wagtail_streamfield_migration_toolkit.operations import (
     RemoveStructChildrenOperation,
     RenameStructChildrenOperation,
 )
+from wagtail_streamfield_migration_toolkit.autodetect.questioner import (
+    InteractiveDataMigrationQuestioner,
+)
 from ..models import BaseStreamBlock, SimpleStreamBlock, NestedStreamBlock
 
 
@@ -42,37 +45,66 @@ class NestedStreamWithRenamedStructChild(NestedStreamBlock):
     struct1 = SimpleStructWithRenamedChild()
 
 
-class StreamChangeDetectorTests(TestCase):
-    def assertRemoveOperationEqual(self, operation1, operation2):
-        self.assertEqual(
-            operation1.__class__,
-            operation2.__class__,
+def mock_questioner(ret_value, questioner_method):
+    def decorator(func):
+        func_path = "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.{}".format(
+            questioner_method
         )
-        self.assertEqual(operation1.name, operation2.name)
+        with mock.patch(
+            func_path,
+            return_value=ret_value,
+        ) as _mock:
+            return _mock
 
-    def assertRenameOperationEqual(self, operation1, operation2):
+    return decorator
+
+
+class StreamChangeDetectorTests(TestCase):
+    def assertOperationEqual(self, operation1, operation2):
         self.assertEqual(
             operation1.__class__,
             operation2.__class__,
         )
-        self.assertEqual(operation1.old_name, operation2.old_name)
-        self.assertEqual(operation1.new_name, operation2.new_name)
+        self.assertEqual(operation1.__dict__, operation2.__dict__)
+
+    def assertOperationsAndPathsEqual(
+        self, operations_and_paths, expected_operations_and_paths
+    ):
+        counter = 0
+        with self.subTest(counter=counter):
+            self.assertEqual(
+                len(expected_operations_and_paths),
+                len(operations_and_paths),
+            )
+            counter += 1
+
+        for (expected_operation, expected_block_path), (operation, block_path) in zip(
+            expected_operations_and_paths,
+            operations_and_paths,
+        ):
+            with self.subTest(counter=counter):
+                counter += 1
+                self.assertEqual(expected_block_path, block_path)
+                self.assertOperationEqual(expected_operation, operation)
 
     def test_same(self):
         """Test that comparing the same block definition produces no operations"""
 
-        comparer = StreamDefChangeDetector(BaseStreamBlock(), BaseStreamBlock())
+        comparer = StreamDefChangeDetector(
+            BaseStreamBlock(),
+            BaseStreamBlock(),
+            InteractiveDataMigrationQuestioner(),
+        )
         comparer.create_data_migration_operations()
 
         self.assertEqual(len(comparer.merged_operations_and_block_paths), 0)
 
-    @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
-        return_value=True,
-    )
-    def test_stream_child_removed(self, mock_class):
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_removed")
+    def test_stream_child_removed(self, mock_remove_block_questioner):
         comparer = StreamDefChangeDetector(
-            SimpleStreamBlock(), SimpleStreamWithRemovedChild()
+            SimpleStreamBlock(),
+            SimpleStreamWithRemovedChild(),
+            InteractiveDataMigrationQuestioner(),
         )
         comparer.create_data_migration_operations()
 
@@ -80,24 +112,17 @@ class StreamChangeDetectorTests(TestCase):
             (RemoveStreamChildrenOperation("char1"), "")
         ]
 
-        self.assertEqual(
-            len(expected_operations_and_block_paths),
-            len(comparer.merged_operations_and_block_paths),
-        )
-        for (expected_operation, expected_block_path), (operation, block_path) in zip(
-            expected_operations_and_block_paths,
+        self.assertOperationsAndPathsEqual(
             comparer.merged_operations_and_block_paths,
-        ):
-            self.assertEqual(expected_block_path, block_path)
-            self.assertRemoveOperationEqual(expected_operation, operation)
+            expected_operations_and_block_paths,
+        )
 
-    @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
-        return_value=True,
-    )
-    def test_stream_child_renamed(self, mock_class):
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_renamed")
+    def test_stream_child_renamed(self, mock_rename_block_questioner):
         comparer = StreamDefChangeDetector(
-            SimpleStreamBlock(), SimpleStreamWithRenamedChild()
+            SimpleStreamBlock(),
+            SimpleStreamWithRenamedChild(),
+            InteractiveDataMigrationQuestioner(),
         )
         comparer.create_data_migration_operations()
 
@@ -105,24 +130,20 @@ class StreamChangeDetectorTests(TestCase):
             (RenameStreamChildrenOperation("char1", "renamed_char1"), "")
         ]
 
-        self.assertEqual(
-            len(expected_operations_and_block_paths),
-            len(comparer.merged_operations_and_block_paths),
-        )
-        for (expected_operation, expected_block_path), (operation, block_path) in zip(
-            expected_operations_and_block_paths,
+        self.assertOperationsAndPathsEqual(
             comparer.merged_operations_and_block_paths,
-        ):
-            self.assertEqual(expected_block_path, block_path)
-            self.assertRenameOperationEqual(expected_operation, operation)
+            expected_operations_and_block_paths,
+        )
 
-    @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_remove",
-        return_value=True,
-    )
-    def test_nested_struct_child_removed(self, mock_class):
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_same")
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_renamed")
+    def test_nested_struct_child_removed(
+        self, mock_same_block_questioner, mock_rename_block_questioner
+    ):
         comparer = StreamDefChangeDetector(
-            NestedStreamBlock(), NestedStreamWithRemovedStructChild()
+            NestedStreamBlock(),
+            NestedStreamWithRemovedStructChild(),
+            InteractiveDataMigrationQuestioner(),
         )
         comparer.create_data_migration_operations()
 
@@ -130,24 +151,20 @@ class StreamChangeDetectorTests(TestCase):
             (RemoveStructChildrenOperation("char1"), "struct1")
         ]
 
-        self.assertEqual(
-            len(expected_operations_and_block_paths),
-            len(comparer.merged_operations_and_block_paths),
-        )
-        for (expected_operation, expected_block_path), (operation, block_path) in zip(
-            expected_operations_and_block_paths,
+        self.assertOperationsAndPathsEqual(
             comparer.merged_operations_and_block_paths,
-        ):
-            self.assertEqual(expected_block_path, block_path)
-            self.assertRemoveOperationEqual(expected_operation, operation)
+            expected_operations_and_block_paths,
+        )
 
-    @mock.patch(
-        "wagtail_streamfield_migration_toolkit.autodetect.questioner.InteractiveDataMigrationQuestioner.ask_block_rename",
-        return_value=True,
-    )
-    def test_nested_struct_child_renamed(self, mock_class):
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_same")
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_renamed")
+    def test_nested_struct_child_renamed(
+        self, mock_same_block_questioner, mock_rename_block_questioner
+    ):
         comparer = StreamDefChangeDetector(
-            NestedStreamBlock(), NestedStreamWithRenamedStructChild()
+            NestedStreamBlock(),
+            NestedStreamWithRenamedStructChild(),
+            InteractiveDataMigrationQuestioner(),
         )
         comparer.create_data_migration_operations()
 
@@ -155,13 +172,25 @@ class StreamChangeDetectorTests(TestCase):
             (RenameStructChildrenOperation("char1", "renamed_char1"), "struct1")
         ]
 
-        self.assertEqual(
-            len(expected_operations_and_block_paths),
-            len(comparer.merged_operations_and_block_paths),
-        )
-        for (expected_operation, expected_block_path), (operation, block_path) in zip(
-            expected_operations_and_block_paths,
+        self.assertOperationsAndPathsEqual(
             comparer.merged_operations_and_block_paths,
-        ):
-            self.assertEqual(expected_block_path, block_path)
-            self.assertRenameOperationEqual(expected_operation, operation)
+            expected_operations_and_block_paths,
+        )
+
+    @mock_questioner(ret_value=False, questioner_method="ask_if_block_same")
+    @mock_questioner(ret_value=True, questioner_method="ask_if_block_renamed")
+    @mock_questioner(ret_value=False, questioner_method="ask_if_block_removed")
+    def test_nested_struct_child_renamed_incorrect_input(
+        self,
+        mock_same_block_questioner,
+        mock_rename_block_questioner,
+        mock_remove_block_questioner,
+    ):
+        comparer = StreamDefChangeDetector(
+            NestedStreamBlock(),
+            NestedStreamWithRenamedStructChild(),
+            InteractiveDataMigrationQuestioner(),
+        )
+        comparer.create_data_migration_operations()
+
+        self.assertEqual(0, len(comparer.merged_operations_and_block_paths))
