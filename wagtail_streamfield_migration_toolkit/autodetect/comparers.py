@@ -1,7 +1,15 @@
 import importlib
+import inspect
 from functools import lru_cache
 from wagtail import hooks
-from wagtail.blocks import StreamBlock, StructBlock, ListBlock, Block
+from wagtail.blocks import (
+    StreamBlock,
+    StructBlock,
+    ListBlock,
+    Block,
+    CharBlock,
+    StreamValue,
+)
 
 
 @lru_cache()
@@ -13,8 +21,7 @@ def import_class(path):
 class BaseBlockDefComparer:
     """Base class for all BlockDefComparers"""
 
-    # weights for the importance of argument similarity and name similarity
-    arg_weight = None
+    # weights for the importance of keyword argument similarity and name similarity
     name_weight = None
     kwarg_weight = None
 
@@ -23,25 +30,21 @@ class BaseBlockDefComparer:
 
         # TODO it might be best to add some separate tests for the hashable_deep_deconstruct method
         # itself
-        old_path, old_args, old_kwargs = cls.hashable_deep_deconstruct(old_def)
-        new_path, new_args, new_kwargs = cls.hashable_deep_deconstruct(new_def)
+        old_path, _, old_kwargs = cls.hashable_deep_deconstruct(old_def)
+        new_path, _, new_kwargs = cls.hashable_deep_deconstruct(new_def)
 
+        # TODO rewrite explanation for changes to kwargs
         # - For structural blocks, args are a list of children, and kwargs contain block options
         # like label, icon etc.
         # - For other blocks, args includes any positional arguments and kwargs contains the block
         # options. Most basic blocks like CharBlock have no args it seems.
-        # TODO we have an issue with blocks like SnippetChooserBlock which are using the
-        # base Blocks deconstruct method, where passing a positional arg returns it in args in
-        # the deconstruct method, but passing the same as a keyword arg returns it in kwargs.
 
         return cls._compare(
             old_name=old_name,
             old_path=old_path,
-            old_args=old_args,
             old_kwargs=old_kwargs,
             new_name=new_name,
             new_path=new_path,
-            new_args=new_args,
             new_kwargs=new_kwargs,
         )
 
@@ -51,11 +54,9 @@ class BaseBlockDefComparer:
         cls,
         old_name,
         old_path,
-        old_args,
         old_kwargs,
         new_name,
         new_path,
-        new_args,
         new_kwargs,
     ):
         # This might not be a black and white decision for all cases. However for cases like where
@@ -66,15 +67,11 @@ class BaseBlockDefComparer:
         if not cls.compare_types(old_path, new_path):
             return 0
 
-        # TODO args and kwargs distinct comparison might have to be changed in future
         name_similarity = cls.compare_names(old_name, new_name)
-        arg_similarity = cls.compare_args(old_args, new_args)
         kwarg_similarity = cls.compare_kwargs(old_kwargs, new_kwargs)
 
         return cls.normalize_similarity(
-            arg_similarity=arg_similarity,
-            name_similarity=name_similarity,
-            kwarg_similarity=kwarg_similarity,
+            name_similarity=name_similarity, kwarg_similarity=kwarg_similarity
         )
 
     @staticmethod
@@ -83,27 +80,26 @@ class BaseBlockDefComparer:
         return old_path == new_path
 
     @classmethod
-    def compare_args(cls, old_args, new_args):
-        # returns a normalized score (0 to 1)
-        raise NotImplementedError
-
-    @classmethod
     def compare_kwargs(cls, old_kwargs, new_kwargs):
         # returns a score between 0 and 1
 
-        # TODO consider also default kwargs - see how much work this entails
-        # TODO consider all changes: both additions and removals
-
-        if len(old_kwargs) == 0:
+        if len(old_kwargs) == 0 and len(new_kwargs) == 0:
             return 1
 
-        kwarg_score = 0
-        new_kwargs_dict = {kwarg: value for kwarg, value in new_kwargs}
-        for kwarg, value in old_kwargs:
-            if kwarg in new_kwargs_dict and new_kwargs_dict[kwarg] == value:
-                kwarg_score += 1
+        old_kwargs_dict = dict(old_kwargs)
+        new_kwargs_dict = dict(new_kwargs)
+        all_keys = set(old_kwargs_dict.keys()).union(set(new_kwargs_dict.keys()))
 
-        return kwarg_score / len(old_kwargs)
+        kwarg_score = 0
+        for key in all_keys:
+            old_value = old_kwargs_dict.get(key, None)
+            new_value = new_kwargs_dict.get(key, None)
+
+            if old_value == new_value:
+                kwarg_score += 1
+        kwarg_score = kwarg_score / len(all_keys)
+
+        return kwarg_score
 
     @staticmethod
     def compare_names(old_name, new_name):
@@ -138,9 +134,9 @@ class BaseBlockDefComparer:
                 for key, value in obj.items()
             )
         elif isinstance(obj, type):
-            return obj
+            return obj.__qualname__
         elif hasattr(obj, "deconstruct"):
-            path, args, kwargs = obj.deconstruct()
+            path, args, kwargs = cls.get_default_kwargs(obj)
             setattr(
                 obj,
                 "_hashable_deep_deconstructed",
@@ -154,130 +150,163 @@ class BaseBlockDefComparer:
                 ),
             )
             return getattr(obj, "_hashable_deep_deconstructed")
+        elif isinstance(obj, StreamValue):
+            return obj.__class__.__name__
         else:
             return obj
 
+    @staticmethod
+    def get_default_kwargs(block):
+
+        path, args, kwargs = block.deconstruct()
+        signature = inspect.Signature.from_callable(block.__init__)
+        defaults = {
+            k: v.default
+            for k, v in signature.parameters.items()
+            if k not in ("self", "kwargs")
+        }
+        bound = signature.bind(*args, **kwargs).arguments
+        extras = bound.pop("kwargs", {})
+        flat_bound = {**bound, **extras}
+
+        kwargs_dict = {**defaults, **flat_bound}
+
+        for attr in dir(block.meta):
+            if attr.startswith("_"):
+                continue
+            value = getattr(block.meta, attr)
+            kwargs_dict[attr] = value
+
+        return path, (), kwargs_dict
+
     @classmethod
-    def normalize_similarity(cls, arg_similarity, name_similarity, kwarg_similarity):
+    def normalize_similarity(cls, name_similarity, kwarg_similarity):
         return (
-            arg_similarity * cls.arg_weight
-            + name_similarity * cls.name_weight
-            + kwarg_similarity * cls.kwarg_weight
-        ) / (cls.arg_weight + cls.name_weight + cls.kwarg_weight)
+            name_similarity * cls.name_weight + kwarg_similarity * cls.kwarg_weight
+        ) / (cls.name_weight + cls.kwarg_weight)
 
 
 class StructuralBlockDefComparer(BaseBlockDefComparer):
     # For structural blocks, i.e., Stream, Struct and List Blocks.
 
+    child_kwarg_weight = None
+    base_kwarg_weight = None
+
     @classmethod
-    def compare_args(cls, old_args, new_args):
-        old_children, new_children = cls.get_children(old_args, new_args)
+    def compare_kwargs(cls, old_kwargs, new_kwargs):
+        old_children, new_children, old_kwargs, new_kwargs = cls.get_children(
+            old_kwargs, new_kwargs
+        )
 
-        child_score_sum = 0
-        new_children_by_name = {
-            new_child_name: new_child_tuple
-            for new_child_name, new_child_tuple in new_children
-        }
-        for old_child_name, (
-            old_child_path,
-            old_child_args,
-            old_child_kwargs,
-        ) in old_children:
-            old_child_def = import_class(old_child_path)
-            comparer: BaseBlockDefComparer = (
-                block_def_comparer_registry.get_block_def_comparer_for_class(
-                    old_child_def
-                )
-            )
-            # TODO do a process similar to what we do outside, where we rank blocks and pick one
-            # to map to.
-            # TODO problem: what if we map one block, but then there would be another block which
-            # we come across afterwards that would have better mapped to it? Also if we're unsure,
-            # do we simply leave blocks unmapped altogether?
-            if old_child_name in new_children_by_name:
-                new_child_path, new_child_args, new_child_kwargs = new_children_by_name[
-                    old_child_name
-                ]
-                child_score_sum += comparer._compare(
-                    old_name=old_child_name,
-                    old_path=old_child_path,
-                    old_args=old_child_args,
-                    old_kwargs=old_child_kwargs,
-                    new_name=old_child_name,
-                    new_path=new_child_path,
-                    new_args=new_child_args,
-                    new_kwargs=new_child_kwargs,
-                )
+        old_child_dict = dict(old_children)
+        new_child_dict = dict(new_children)
 
-        return child_score_sum / len(old_children)
+        # TODO do proper mapping of children, not just by name. Currently we have a very simplistic
+        # mapping by name.
 
-    @staticmethod
-    def get_children(old_args, new_args):
-        """Returns two lists, children of the old block and children of the new block.
+        mapped_child_names = list(
+            set(old_child_dict.keys()).intersection(set(new_child_dict.keys()))
+        )
+        all_child_names = list(
+            set(old_child_dict.keys()).union(set(new_child_dict.keys()))
+        )
 
-        `old_children, new_children = cls.get_children(old_args, new_args)`
-        """
-        raise NotImplementedError
+        child_score = len(mapped_child_names) / len(all_child_names)
+        kwarg_score = super().compare_kwargs(old_kwargs, new_kwargs)
+
+        return (
+            child_score * cls.child_kwarg_weight + kwarg_score * cls.base_kwarg_weight
+        ) / (cls.child_kwarg_weight + cls.base_kwarg_weight)
+
+    @classmethod
+    def get_children(cls, old_kwargs, new_kwargs):
+        # define method to get children in subclasses
+        return (), (), old_kwargs, new_kwargs
 
 
 class DefaultBlockDefComparer(BaseBlockDefComparer):
     """Default used when no other comparer is available"""
 
-    arg_weight = 1
     name_weight = 2
     kwarg_weight = 1
 
-    @classmethod
-    def compare_args(cls, old_args, new_args):
-        # If the old def had no args, then return 1
-        # TODO do we need to get a difference between the args instead? Refer `compare_kwargs` method
-        if len(old_args) == 0:
-            return 1
 
-        arg_score = 0
-        for arg in old_args:
-            if arg in new_args:
-                arg_score += 1
+class CharBlockDefComparer(BaseBlockDefComparer):
+    """Comparer for CharBlocks"""
 
-        return arg_score / len(old_args)
+    # TODO incomplete
+
+    name_weight = 1
+    kwarg_weight = 0.8
 
 
 class StreamBlockDefComparer(StructuralBlockDefComparer):
     """Comparer for StreamBlocks"""
 
     name_weight = 1
-    arg_weight = 1
-    kwarg_weight = 0.1
+    kwarg_weight = 1
+    child_kwarg_weight = 1
+    base_kwarg_weight = 0.1
 
-    @staticmethod
-    def get_children(old_args, new_args):
-        return old_args[0], new_args[0]
+    @classmethod
+    def get_children(cls, old_kwargs, new_kwargs):
+        old_children = ()
+        for (key, value) in old_kwargs:
+            if key == "local_blocks":
+                old_children = value
+
+        new_children = ()
+        for (key, value) in new_kwargs:
+            if key == "local_blocks":
+                new_children = value
+
+        return old_children, new_children, old_kwargs, new_kwargs
 
 
 class StructBlockDefComparer(StructuralBlockDefComparer):
     """Comparer for StructBlocks"""
 
     name_weight = 1
-    arg_weight = 1
-    kwarg_weight = 0.1
+    kwarg_weight = 1
+    child_kwarg_weight = 1
+    base_kwarg_weight = 0.1
 
-    @staticmethod
-    def get_children(old_args, new_args):
-        return old_args[0], new_args[0]
+    @classmethod
+    def get_children(cls, old_kwargs, new_kwargs):
+        old_children = ()
+        for (key, value) in old_kwargs:
+            if key == "local_blocks":
+                old_children = value
+
+        new_children = ()
+        for (key, value) in new_kwargs:
+            if key == "local_blocks":
+                new_children = value
+
+        return old_children, new_children, old_kwargs, new_kwargs
 
 
 class ListBlockDefComparer(StructuralBlockDefComparer):
     """Comparer for ListBlocks"""
 
     name_weight = 1
-    arg_weight = 1
-    kwarg_weight = 0.1
+    kwarg_weight = 0.5
+    child_kwarg_weight = 1
+    base_kwarg_weight = 0.2
 
     @staticmethod
-    def get_children(old_args, new_args):
-        old_children = [(None, old_args[0])]
-        new_children = [(None, new_args[0])]
-        return old_children, new_children
+    def get_children(old_kwargs, new_kwargs):
+        old_child = ()
+        for (key, value) in old_kwargs:
+            if key == "child_block":
+                old_child = ((key, value),)
+
+        new_child = ()
+        for (key, value) in new_kwargs:
+            if key == "child_block":
+                new_child = ((key, value),)
+
+        return old_child, new_child, old_kwargs, new_kwargs
 
 
 class BlockDefComparerRegistry:
@@ -286,6 +315,7 @@ class BlockDefComparerRegistry:
         ListBlock: ListBlockDefComparer,
         StreamBlock: StreamBlockDefComparer,
         StructBlock: StructBlockDefComparer,
+        CharBlock: CharBlockDefComparer,
     }
 
     def __init__(self):
