@@ -234,7 +234,7 @@ class DefaultBlockDefComparer(BaseBlockDefComparer):
 class CharBlockDefComparer(BaseBlockDefComparer):
     """Comparer for CharBlocks"""
 
-    # TODO incomplete
+    # TODO in future might allow comparing other block types too, e.g. CharBlock vs TextBlock
 
     name_weight = 1
     kwarg_weight = 0.8
