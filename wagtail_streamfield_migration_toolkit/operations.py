@@ -176,9 +176,7 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "{}_to_list_block_{}".format(
-            self.block_name, self.list_block_name
-        )
+        return "{}_to_list_block_{}".format(self.block_name, self.list_block_name)
 
 
 class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
@@ -208,8 +206,11 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
             else:
                 mapped_block_value.append(child_block)
 
-        new_stream_block = {"type": self.stream_block_name, "value": stream_value}
-        mapped_block_value.append(new_stream_block)
+        # Append the new stream block only if it's not empty
+        if len(stream_value) > 0:
+            new_stream_block = {"type": self.stream_block_name, "value": stream_value}
+            mapped_block_value.append(new_stream_block)
+
         return mapped_block_value
 
     @property
@@ -305,9 +306,7 @@ class StreamChildrenToStructBlockOperation(BaseBlockOperation):
 
     @property
     def operation_name_fragment(self):
-        return "{}_to_struct_block_{}".format(
-            self.block_name, self.struct_block_name
-        )
+        return "{}_to_struct_block_{}".format(self.block_name, self.struct_block_name)
 
 
 class ListChildrenToStructBlockOperation(BaseBlockOperation):
