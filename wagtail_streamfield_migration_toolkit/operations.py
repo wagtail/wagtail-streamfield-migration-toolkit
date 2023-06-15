@@ -164,8 +164,11 @@ class StreamChildrenToListBlockOperation(BaseBlockOperation):
                 mapped_block_value.append(child_block)
 
         self.map_temp_blocks_to_list_items()
-        new_list_block = {"type": self.list_block_name, "value": self.temp_blocks}
-        mapped_block_value.append(new_list_block)
+
+        if self.temp_blocks:
+            new_list_block = {"type": self.list_block_name, "value": self.temp_blocks}
+            mapped_block_value.append(new_list_block)
+
         return mapped_block_value
 
     def map_temp_blocks_to_list_items(self):
@@ -207,7 +210,7 @@ class StreamChildrenToStreamBlockOperation(BaseBlockOperation):
                 mapped_block_value.append(child_block)
 
         # Append the new stream block only if it's not empty
-        if len(stream_value) > 0:
+        if stream_value:
             new_stream_block = {"type": self.stream_block_name, "value": stream_value}
             mapped_block_value.append(new_stream_block)
 
