@@ -38,7 +38,9 @@ class FieldChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             raw_data=self.raw_data,
             block_path_str="",
-            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            operation=RenameStreamChildrenOperation(
+                old_name="char1", new_name="renamed1"
+            ),
             streamfield=models.SampleModel.content,
         )
 
@@ -104,6 +106,28 @@ class FieldChildBlockTest(TestCase):
         self.assertEqual(
             altered_raw_data[2]["value"][1]["value"], self.raw_data[2]["value"]
         )
+
+    def test_combine_to_listblock_no_existing_children(self):
+        """Combine all `simplestruct` blocks into a new ListBlock named `list1`
+
+        We have no `simplestruct` blocks in our existing data, so there should be no list1 blocks
+        created and the data should be intact.
+        """
+
+        altered_raw_data = apply_changes_to_raw_data(
+            raw_data=self.raw_data,
+            block_path_str="",
+            operation=StreamChildrenToListBlockOperation(
+                block_name="simplestruct", list_block_name="list1"
+            ),
+            streamfield=models.SampleModel.content,
+        )
+
+        self.assertEqual(len(altered_raw_data), 4)
+        self.assertEqual(altered_raw_data[0], self.raw_data[0])
+        self.assertEqual(altered_raw_data[1], self.raw_data[1])
+        self.assertEqual(altered_raw_data[2], self.raw_data[2])
+        self.assertEqual(altered_raw_data[3], self.raw_data[3])
 
     def test_combine_single_type_to_streamblock(self):
         """Combine all `char1` blocks as children of a new StreamBlock named `stream1`
@@ -245,7 +269,9 @@ class FieldStructChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             raw_data=self.raw_data,
             block_path_str="simplestruct",
-            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            operation=RenameStructChildrenOperation(
+                old_name="char1", new_name="renamed1"
+            ),
             streamfield=models.SampleModel.content,
         )
 
@@ -268,7 +294,9 @@ class FieldStructChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             raw_data=self.raw_data,
             block_path_str="simplestruct",
-            operation=RenameStructChildrenOperation(old_name="char1", new_name="renamed1"),
+            operation=RenameStructChildrenOperation(
+                old_name="char1", new_name="renamed1"
+            ),
             streamfield=models.SampleModel.content,
         )
 
@@ -354,7 +382,9 @@ class FieldStreamChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             raw_data=self.raw_data,
             block_path_str="simplestream",
-            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            operation=RenameStreamChildrenOperation(
+                old_name="char1", new_name="renamed1"
+            ),
             streamfield=models.SampleModel.content,
         )
         self.assertEqual(altered_raw_data[0], self.raw_data[0])
@@ -376,7 +406,9 @@ class FieldStreamChildBlockTest(TestCase):
         altered_raw_data = apply_changes_to_raw_data(
             raw_data=self.raw_data,
             block_path_str="simplestream",
-            operation=RenameStreamChildrenOperation(old_name="char1", new_name="renamed1"),
+            operation=RenameStreamChildrenOperation(
+                old_name="char1", new_name="renamed1"
+            ),
             streamfield=models.SampleModel.content,
         )
 
