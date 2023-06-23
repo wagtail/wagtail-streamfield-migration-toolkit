@@ -192,7 +192,7 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
 
     @classmethod
     def compare_options(cls, old_options, new_options):
-        old_children, new_children, old_options, new_options = cls.get_children(
+        old_children, new_children, old_options, new_options = cls.extract_children(
             old_options, new_options
         )
 
@@ -217,8 +217,9 @@ class StructuralBlockDefComparer(BaseBlockDefComparer):
         ) / (cls.child_option_weight + cls.base_option_weight)
 
     @classmethod
-    def get_children(cls, old_options, new_options):
+    def extract_children(cls, old_options, new_options):
         # define method to get children in subclasses
+        # make sure to pop them from the options
         return (), (), old_options, new_options
 
 
@@ -247,21 +248,24 @@ class StreamBlockDefComparer(StructuralBlockDefComparer):
     base_option_weight = 0.1
 
     @classmethod
-    def get_children(cls, old_options, new_options):
-        # todo extract children might be a better name (that the children will be removed and the
-        # rest of the options will be returned separately)
+    def extract_children(cls, old_options, new_options):
         old_children = ()
+        _old_options = []
         for (key, value) in old_options:
             if key == "local_blocks":
                 old_children = value
-            # break
+            else:
+                _old_options.append((key, value))
 
         new_children = ()
+        _new_options = []
         for (key, value) in new_options:
             if key == "local_blocks":
                 new_children = value
+            else:
+                _new_options.append((key, value))
 
-        return old_children, new_children, old_options, new_options
+        return old_children, new_children, _old_options, _new_options
 
 
 class StructBlockDefComparer(StructuralBlockDefComparer):
@@ -273,18 +277,24 @@ class StructBlockDefComparer(StructuralBlockDefComparer):
     base_option_weight = 0.1
 
     @classmethod
-    def get_children(cls, old_options, new_options):
+    def extract_children(cls, old_options, new_options):
         old_children = ()
+        _old_options = []
         for (key, value) in old_options:
             if key == "local_blocks":
                 old_children = value
+            else:
+                _old_options.append((key, value))
 
         new_children = ()
+        _new_options = []
         for (key, value) in new_options:
             if key == "local_blocks":
                 new_children = value
+            else:
+                _new_options.append((key, value))
 
-        return old_children, new_children, old_options, new_options
+        return old_children, new_children, _old_options, _new_options
 
 
 class ListBlockDefComparer(StructuralBlockDefComparer):
@@ -296,18 +306,24 @@ class ListBlockDefComparer(StructuralBlockDefComparer):
     base_option_weight = 0.2
 
     @staticmethod
-    def get_children(old_options, new_options):
+    def extract_children(old_options, new_options):
         old_child = ()
+        _old_options = []
         for (key, value) in old_options:
             if key == "child_block":
                 old_child = ((key, value),)
+            else:
+                _old_options.append((key, value))
 
         new_child = ()
+        _new_options = []
         for (key, value) in new_options:
             if key == "child_block":
                 new_child = ((key, value),)
+            else:
+                _new_options.append((key, value))
 
-        return old_child, new_child, old_options, new_options
+        return old_child, new_child, _old_options, _new_options
 
 
 class BlockDefComparerRegistry:
