@@ -16,6 +16,8 @@ from wagtail_streamfield_migration_toolkit.autodetect.comparers import (
     BaseBlockDefComparer,
     StreamBlockDefComparer,
     StructBlockDefComparer,
+    CharBlockDefComparer,
+    ListBlockDefComparer
 )
 from wagtail_streamfield_migration_toolkit.autodetect.streamchangedetector import (
     VERIFYING_SIMILARITY_THRESHOLD,
@@ -68,7 +70,7 @@ class BlockComparerTestCase(TestCase):
     def is_unsure(score):
         return (
             score < CONFIDENT_SIMILARITY_THRESHOLD
-            and score > VERIFYING_SIMILARITY_THRESHOLD
+            and score >= VERIFYING_SIMILARITY_THRESHOLD
         )
 
     @staticmethod
@@ -316,4 +318,56 @@ class TestStreamBlocks(BlockComparerTestCase):
             new_def=DiffThreeFieldStream(),
             new_name="fee",
             predicate=self.is_dissimilar,
+        )
+
+
+class TestListBlocks(BlockComparerTestCase):
+    def test_same_block(self):
+        # comparing the same blocks should obviously give a score of 1; we would be pretty confident
+        # that they are the same block
+        self.assertBlockComparisonScore(
+            comparer=ListBlockDefComparer,
+            old_def=ListBlock(CharBlock()),
+            old_name="foo",
+            new_def=ListBlock(CharBlock()),
+            new_name="foo",
+            predicate=self.is_similar,
+        )
+
+
+class TestCharBlocks(BlockComparerTestCase):
+    def test_same_block(self):
+        # comparing the same blocks should obviously give a score of 1; we would be pretty confident
+        # that they are the same block
+        self.assertBlockComparisonScore(
+            comparer=CharBlockDefComparer,
+            old_def=CharBlock(),
+            old_name="foo",
+            new_def=CharBlock(),
+            new_name="foo",
+            predicate=self.is_similar,
+        )
+
+    def test_diff_kwargs(self):
+        # For char blocks with the same names, we can be fairly certain that they are the same block
+        # regardless of changes to kwargs.
+        self.assertBlockComparisonScore(
+            comparer=CharBlockDefComparer,
+            old_def=CharBlock(label="FOO", icon="cup"),
+            old_name="foo",
+            new_def=CharBlock(required=False),
+            new_name="foo",
+            predicate=self.is_similar,
+        )
+
+    def test_diff_name(self):
+        # If the name is different, for char blocks we would assume that they are most probably
+        # different blocks
+        self.assertBlockComparisonScore(
+            comparer=CharBlockDefComparer,
+            old_def=CharBlock(),
+            old_name="foo",
+            new_def=CharBlock(),
+            new_name="fee",
+            predicate=self.is_unsure,
         )
