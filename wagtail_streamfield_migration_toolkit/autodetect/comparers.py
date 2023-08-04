@@ -25,6 +25,9 @@ class BaseBlockDefComparer:
     name_weight = None
     option_weight = None
 
+    # custom weights for specific options - NOTE that sum of all weights should add up to 1
+    custom_option_weights = {}
+
     @classmethod
     def compare(cls, old_def, old_name, new_def, new_name):
 
@@ -79,6 +82,9 @@ class BaseBlockDefComparer:
 
     @classmethod
     def compare_options(cls, old_options, new_options):
+        # TODO - suggestion: add a weight to options we want to specifically give a different
+        # weight, and take 1-(x) / len(remaining options) for the rest of the options
+
         # returns a score between 0 and 1
 
         if len(old_options) == 0 and len(new_options) == 0:
@@ -88,15 +94,24 @@ class BaseBlockDefComparer:
         new_options_dict = dict(new_options)
         all_keys = set(old_options_dict.keys()).union(set(new_options_dict.keys()))
 
+        # Default weight is calculated as (1 - sum of custom weights) / (number of options)
+        default_weight = 1
+        option_count = len(all_keys)
+        for _, weight in cls.custom_option_weights.items():
+            default_weight -= weight
+            option_count -= 1
+        default_weight = default_weight / option_count
+
         option_score = 0
         for key in all_keys:
             old_value = old_options_dict.get(key, None)
             new_value = new_options_dict.get(key, None)
 
             if old_value == new_value:
-                option_score += 1
-        option_score = option_score / len(all_keys)
-
+                if key in cls.custom_option_weights:
+                    option_score += cls.custom_option_weights[key]
+                else:
+                    option_score += default_weight
         return option_score
 
     @staticmethod
